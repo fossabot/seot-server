@@ -6,3 +6,4 @@ pep8-naming==0.4.1
 pycodestyle==2.0.0
 pyflakes==1.2.3
 six==1.10.0
+django==1.10.2
