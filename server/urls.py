@@ -3,5 +3,4 @@ from server import views
 
 urlpatterns = [
     url(r'^heartbeat/$', views.heartbeat_response),
-    url(r'^accept/$', views.accept_response),
 ]
