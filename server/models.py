@@ -30,6 +30,7 @@ class Agent(models.Model):
 #     nodes = models.ManyToManyField(NodeType, related_name="agents")
     available_node_types = models.ManyToManyField(NodeType,
                                                   related_name="agents")
+    ip_addr = models.CharField(max_length=64, default='127.0.0.1')
 
 
 class Job(models.Model):
