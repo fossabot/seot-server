@@ -5,29 +5,29 @@ from .models import Agent, App, Job, Node, NodeType, User
 
 @admin.register(App)
 class AppAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('app_id', 'name')
 
 
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('agent_id', 'user_id')
 
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('user_id', 'name')
 
 
 @admin.register(NodeType)
 class NodeTypeAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('name',)
 
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('job_id', 'name', 'application_id')
 
 
 @admin.register(Node)
 class NodeAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('name', 'node_type', 'to', 'job')
