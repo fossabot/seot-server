@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'server',
     'rest_framework',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -122,3 +123,21 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 APPEND_SLASH = False
+
+BROKER_URL = 'amqp://localhost'
+CELERY_RESULT_BACKEND = 'rpc://'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_IMPORTS = (
+    'server.tasks',
+)
+
+import datetime
+
+CELERYBEAT_SCHEDULE = {
+    'timeout-schdule': {
+        'task': 'server.tasks.check_timeout',
+        'schedule': datetime.timedelta(seconds=10),
+    },
+}

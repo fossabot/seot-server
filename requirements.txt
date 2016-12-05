@@ -9,3 +9,4 @@ six==1.10.0
 django==1.10.2
 django-filter==0.15.2
 djangorestframework==3.4.7
+celery==4.0.0
