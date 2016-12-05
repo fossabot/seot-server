@@ -17,6 +17,9 @@ class App(models.Model):
 class NodeType(models.Model):
     name = models.CharField(max_length=128)
 
+    def __str__(self):
+        return '%s' % (self.name)
+
 
 class Agent(models.Model):
     user_id = models.CharField(max_length=128, default='0')
