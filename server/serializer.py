@@ -39,6 +39,7 @@ class AgentSerializer(serializers.ModelSerializer):
         return agent
 
     def nodes_create_and_add(self, agent, nodes_data):
+        agent.available_node_types.clear()
         for node_data in nodes_data:
             node_type, created = NodeType.objects.\
                     get_or_create(name=str(node_data))
