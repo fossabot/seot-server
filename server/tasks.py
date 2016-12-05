@@ -12,7 +12,7 @@ from .models import Agent
 def check_timeout():
     print('timeout')
     today = datetime.datetime.utcnow().replace(tzinfo=utc)
-    delay = timedelta(minutes=5)
+    delay = timedelta(seconds=10)
     for agent in Agent.objects.filter(latest_heartbeat_at__lte=today - delay):
         print(agent)
         agent.delete()

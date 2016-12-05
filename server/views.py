@@ -29,7 +29,6 @@ def heartbeat_response(request):
     if serializer.is_valid():
         """
         ここにheartbeat受信時の処理を書く
-        * request内容読み込み、Agentモデルのインスタンス作成/更新
         * responseを返す
             * Appモデルのインスタンスのうち、agentの割当オファーをしているもの
               を探す

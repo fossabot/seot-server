@@ -10,6 +10,8 @@ class User(models.Model):
 class App(models.Model):
     app_id = models.CharField(max_length=128, default='0')
     name = models.CharField(max_length=128, blank=True)
+    # APP 1 - N Job
+    # APP 1 - N Node
 
 
 class NodeType(models.Model):
@@ -19,10 +21,12 @@ class NodeType(models.Model):
 class Agent(models.Model):
     user_id = models.CharField(max_length=128, default='0')
     agent_id = models.CharField(max_length=128, default='0')
-    longitude = models.DecimalField(max_digits=9, decimal_places=6,
-                                    default=Decimal('0.0'))
-    latitude = models.DecimalField(max_digits=9, decimal_places=6,
-                                   default=Decimal('0.0'))
+    longitude = models.FloatField(default=0.0)
+    latitude = models.FloatField(default=0.0)
+#     longitude = models.DecimalField(max_digits=9, decimal_places=6,
+#                                     default=Decimal('0.0'))
+#     latitude = models.DecimalField(max_digits=9, decimal_places=6,
+#                                    default=Decimal('0.0'))
     busy = models.BooleanField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     latest_heartbeat_at = models.DateTimeField(auto_now=True)
@@ -38,6 +42,7 @@ class Job(models.Model):
     job_id = models.CharField(max_length=256, default='')
     application_id = models.CharField(max_length=256, default='')
     # application = models.ForeignKey(App, related_name='jobs')
+    # Job 1 - N Node
 
 
 class Node(models.Model):
@@ -45,4 +50,5 @@ class Node(models.Model):
     node_type = models.ForeignKey(NodeType, related_name="nodes")
     args = models.CharField(max_length=256, default='')
     to = models.CharField(max_length=256, default='')
-    job = models.ForeignKey(Job, related_name="nodes")
+    # job = models.ForeignKey(Job, related_name="nodes")
+    #
