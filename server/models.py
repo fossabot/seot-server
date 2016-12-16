@@ -1,4 +1,3 @@
-from decimal import Decimal
 from django.db import models
 
 
@@ -26,15 +25,10 @@ class Agent(models.Model):
     agent_id = models.CharField(max_length=128, default='0')
     longitude = models.FloatField(default=0.0)
     latitude = models.FloatField(default=0.0)
-#     longitude = models.DecimalField(max_digits=9, decimal_places=6,
-#                                     default=Decimal('0.0'))
-#     latitude = models.DecimalField(max_digits=9, decimal_places=6,
-#                                    default=Decimal('0.0'))
     busy = models.BooleanField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     latest_heartbeat_at = models.DateTimeField(auto_now=True)
     dpp_listen_port = models.IntegerField(default=51423)
-#     nodes = models.ManyToManyField(NodeType, related_name="agents")
     available_node_types = models.ManyToManyField(NodeType,
                                                   related_name="agents")
     ip_addr = models.CharField(max_length=64, default='127.0.0.1')

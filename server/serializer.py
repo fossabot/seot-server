@@ -19,7 +19,7 @@ class AgentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
         fields = ('user_id', 'agent_id', 'longitude',
-                  'latitude', 'busy', 'nodes')
+                  'latitude', 'busy', 'nodes', 'ip_addr')
 
     def create(self, validated_data):
         nodes_data = self.validated_data.pop("nodes")
@@ -33,9 +33,12 @@ class AgentSerializer(serializers.ModelSerializer):
         agent.longitude = validated_data.get('longitude', agent.longitude)
         agent.latitude = validated_data.get('latitude', agent.latitude)
         agent.busy = validated_data.get('busy', agent.busy)
+        agent.ip_addr = validated_data.get('ip_addr', agent.ip_addr)
 
         nodes_data = self.validated_data.pop("nodes")
         self.nodes_create_and_add(agent, nodes_data)
+
+        agent.save()
         return agent
 
     def nodes_create_and_add(self, agent, nodes_data):

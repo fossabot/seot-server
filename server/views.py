@@ -23,9 +23,17 @@ class JSONResponse(HttpResponse):
 @api_view(['POST'])
 @parser_classes((JSONParser, ))
 def heartbeat_response(request):
+    agent_ip_addr = request.META.get('REMOTE_ADDR')
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        agent_ip_addr = x_forwarded_for.split(',')[0]
+
     data = JSONParser().parse(request)
-    agent, created = Agent.objects.get_or_create(agent_id=data['agent_id'])
-    serializer = AgentSerializer(agent, data=data)
+    data['ip_addr'] = agent_ip_addr
+    print(data)
+    agent, created = Agent.objects.get_or_create(agent_id=data['agent_id'],
+                                                 user_id=data['user_id'],)
+    serializer = AgentSerializer(agent, data=data, partial=True)
     if serializer.is_valid():
         """
         ここにheartbeat受信時の処理を書く
@@ -36,7 +44,6 @@ def heartbeat_response(request):
             * AppのIDを読み取る
         """
         serializer.save()
-        # return JSONResponse(serializer.data, status=201)
         response = {
                 "job_offer": False,
         }
