@@ -5,10 +5,16 @@ class User(models.Model):
     user_id = models.CharField(max_length=128, default='0')
     name = models.CharField(max_length=128, blank=True)
 
+    def __str__(self):
+        return '%s' % (self.name)
+
 
 class App(models.Model):
     app_id = models.CharField(max_length=128, default='0')
     name = models.CharField(max_length=128, blank=True)
+
+    def __str__(self):
+        return '%s' % (self.name)
 
 
 class NodeType(models.Model):
@@ -31,6 +37,9 @@ class Agent(models.Model):
                                                   related_name="agents",)
     ip_addr = models.CharField(max_length=64, default='127.0.0.1')
 
+    def __str__(self):
+        return '%s' % (self.agent_id)
+
 
 class Job(models.Model):
     name = models.CharField(max_length=128, default='')
@@ -40,6 +49,9 @@ class Job(models.Model):
                                     related_name='jobs',
                                     blank=True,
                                     null=True,)
+
+    def __str__(self):
+        return '%s' % (self.name)
 
 
 class Node(models.Model):
@@ -61,3 +73,6 @@ class Node(models.Model):
                                     related_name="nodes",
                                     blank=True,
                                     null=True,)
+
+    def __str__(self):
+        return '%s' % (self.name)
