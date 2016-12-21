@@ -1,15 +1,17 @@
-# from datetime import datetime
-#
-from django.http import HttpResponse
+import os
+
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
-# from rest_framework import filters, viewsets
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 
+from .forms import UploadFileForm
 from .models import Agent
 from .serializer import AgentSerializer
+UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
 
 class JSONResponse(HttpResponse):
@@ -49,3 +51,25 @@ def heartbeat_response(request):
         }
         return JSONResponse(response, status=200)
     return JSONResponse(serializer.errors, status=400)
+
+
+def upload_file(request):
+    if request.method == 'POST':
+        form = UploadFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            handle_uploaded_file(request.FILES['file'])
+            return HttpResponseRedirect('/complete/')
+    else:
+        form = UploadFileForm()
+    return render(request, 'server/form.html', {'form': form})
+
+
+def handle_uploaded_file(f):
+    path = os.path.join(UPLOAD_DIR, f.name)
+    with open(path, 'wb+') as destination:
+        for chunk in f.chunks():
+            destination.write(chunk)
+
+
+def complete(request):
+    return render(request, 'server/complete.html')
