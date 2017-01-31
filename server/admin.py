@@ -25,7 +25,7 @@ class NodeTypeAdmin(admin.ModelAdmin):
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
-    list_display = ('job_id', 'name', 'application_id')
+    list_display = ('id', 'name', 'application_id')
 
 
 @admin.register(Node)

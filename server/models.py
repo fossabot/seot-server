@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.contrib.auth.models import User as AuthUser
 from django.db import models
 from django.utils.html import format_html
@@ -19,7 +21,7 @@ class App(models.Model):
     user = models.ForeignKey(User, related_name="apps", blank=True, null=True)
     define_file = models.FileField(upload_to='uploads/app_define_files/',
                                    blank=True, null=True)
-    upload_time = models.DateTimeField(auto_now_add=True,)
+    upload_time = models.DateTimeField(default=datetime.now)
     hold = models.BooleanField(default=True)
 
     def file_link(self):
@@ -52,7 +54,7 @@ class Agent(models.Model):
     longitude = models.FloatField(default=0.0)
     latitude = models.FloatField(default=0.0)
     busy = models.BooleanField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=datetime.now)
     latest_heartbeat_at = models.DateTimeField(auto_now=True)
     dpp_listen_port = models.IntegerField(default=51423)
     available_node_types = models.ManyToManyField(NodeType,
@@ -65,7 +67,7 @@ class Agent(models.Model):
 
 class Job(models.Model):
     name = models.CharField(max_length=128, default='')
-    job_id = models.CharField(max_length=256, default='')
+#     job_id = models.CharField(max_length=256, default='')
     application = models.ForeignKey(App,
                                     models.SET_NULL,
                                     related_name='jobs',
@@ -89,9 +91,8 @@ class Node(models.Model):
                                   blank=True)
     args = models.CharField(max_length=256, default='')
     next_nodes = models.ManyToManyField('self',
-                                related_name="before_nodes",
-                                blank=True,
-                                )
+                                        related_name="before_nodes",
+                                        blank=True,)
     name = models.CharField(max_length=128, default='')
     job = models.ForeignKey(Job,
                             models.SET_NULL,
@@ -106,20 +107,3 @@ class Node(models.Model):
 
     def __str__(self):
         return '%s' % (self.name)
-
-
-# 削除する
-# ファイル読み込み時にapp/node登録すること
-# class AppDefineFile(models.Model):
-#     hold = models.BooleanField(default=True)
-#     user = models.CharField(max_length=128, blank=True, null=True)
-#     name = models.CharField(max_length=50, default='app_define_file')
-#     upload_time = models.DateTimeField(auto_now_add=True)
-#     yaml_file = models.FileField(upload_to='uploads/app_define_files/')
-#
-#     def file_link(self):
-#         if self.yaml_file:
-#             return "<a href='%s'>download</a>" % (self.yaml_file.url,)
-#         else:
-#             return "No attachment"
-#     file_link.allow_tags = True
