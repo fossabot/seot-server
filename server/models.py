@@ -76,6 +76,7 @@ class Job(models.Model):
                                         related_name='allocated_jobs',
                                         blank=True,
                                         null=True)
+    runnning = models.BooleanField(default=False)
 
     def __str__(self):
         return '%s' % (self.name)
