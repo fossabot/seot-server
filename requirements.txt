@@ -10,4 +10,5 @@ django==1.10.2
 django-filter==0.15.2
 djangorestframework==3.4.7
 celery==4.0.0
+celerybeat==3.1.17
 PyYAML==3.12
