@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'server',
     'rest_framework',
     'django_celery_beat',
+    'accounts',
 ]
 
 MIDDLEWARE = [

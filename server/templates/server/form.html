@@ -1,9 +1,10 @@
-{% extends "server/base.html" %}
+{% extends "admin/base.html" %}
 
 {% block title %}アップローダサンプル{% endblock title %}
 {% block content %}
     <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
+        hello {{ request.user.username }}
         {{ form.as_p }}
         <input type="submit" value="アップロード">
     </form>
