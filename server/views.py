@@ -13,7 +13,7 @@ from rest_framework.renderers import JSONRenderer
 import yaml
 
 from .forms import AppForm
-from .models import Agent, Job, User, App, AppStatus, Node
+from .models import Agent, AppStatus, Job, Node, User
 from .serializer import NodeSerializer
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
