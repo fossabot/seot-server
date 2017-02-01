@@ -1,5 +1,7 @@
 import json
 import os
+import re
+
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
@@ -49,7 +51,6 @@ def heartbeat_response(request):
         return JSONResponse(response, status=200)
     except Job.DoesNotExist:
         # Running 状態のジョブがない場合のレスポンス
-        print("Does Not Exist : Job")
         response = {
             "run": False,
             "kill": False
@@ -58,6 +59,42 @@ def heartbeat_response(request):
     except User.DoesNotExist:
         # ユーザが存在しない場合
         return JSONResponse({}, status=400)
+
+
+@csrf_exempt
+@parser_classes((JSONParser, ))
+def job_request(request, job_id):
+
+    # uuidがuuid4に準拠しているかどうか
+    if _validate_uuid4(job_id) is None:
+        return JSONResponse({}, status=400)
+
+    try:
+        job = Job.objects.get(id=job_id)
+        nodes = []
+        for n in job.nodes.all():
+            node = {
+                "name": n.name,
+                "type": n.type_name(),
+                "args": n.args,
+                "to": n.to()
+            }
+            nodes.append(node)
+
+        response = {
+            "job_id": str(job.id),
+            "application_id": str(job.application_id),
+            "nodes": nodes
+        }
+        return JSONResponse(response, status=200)
+    except Job.DoesNotExist:
+        return JSONResponse({}, status=400)
+
+
+def _validate_uuid4(uuid):
+    return re.match(
+            """[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}
+               -[89ab][0-9a-f]{3}-[0-9a-f]{12}""", uuid)
 
 
 @login_required

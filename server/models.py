@@ -87,7 +87,7 @@ class Job(models.Model):
     runnning = models.BooleanField(default=False)
 
     def __str__(self):
-        return '%s' % (self.name)
+        return '%s' % (self.id)
 
 
 class Node(models.Model):
@@ -111,6 +111,15 @@ class Node(models.Model):
                                     related_name="nodes",
                                     blank=True,
                                     null=True)
+
+    def type_name(self):
+        return self.node_type.name
+
+    def to(self):
+        to_nodes = []
+        for n in self.next_nodes.all():
+            to_nodes.append(n.name)
+        return to_nodes
 
     def __str__(self):
         return '%s' % (self.name)
