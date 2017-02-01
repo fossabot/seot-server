@@ -1,7 +1,7 @@
 import uuid
-from datetime import datetime
 from django.contrib.auth.models import User as AuthUser
 from django.db import models
+from django.utils import timezone
 from django.utils.html import format_html
 
 
@@ -23,7 +23,7 @@ class App(models.Model):
     user = models.ForeignKey(User, related_name="apps", blank=True, null=True)
     define_file = models.FileField(upload_to='uploads/app_define_files/',
                                    blank=True, null=True)
-    upload_time = models.DateTimeField(default=datetime.now)
+    upload_time = models.DateTimeField(default=timezone.now)
     hold = models.BooleanField(default=True)
 
     def file_link(self):
@@ -60,7 +60,7 @@ class Agent(models.Model):
     longitude = models.FloatField(default=0.0)
     latitude = models.FloatField(default=0.0)
     busy = models.BooleanField(default=0)
-    created_at = models.DateTimeField(default=datetime.now)
+    created_at = models.DateTimeField(default=timezone.now)
     latest_heartbeat_at = models.DateTimeField(auto_now=True)
     dpp_listen_port = models.IntegerField(default=51423)
     available_node_types = models.ManyToManyField(NodeType,
@@ -87,7 +87,7 @@ class Job(models.Model):
     runnning = models.BooleanField(default=False)
 
     def __str__(self):
-        return '%s' % (self.name)
+        return '%s' % (self.id)
 
 
 class Node(models.Model):
@@ -111,6 +111,15 @@ class Node(models.Model):
                                     related_name="nodes",
                                     blank=True,
                                     null=True)
+
+    def type_name(self):
+        return self.node_type.name
+
+    def to(self):
+        to_nodes = []
+        for n in self.next_nodes.all():
+            to_nodes.append(n.name)
+        return to_nodes
 
     def __str__(self):
         return '%s' % (self.name)
