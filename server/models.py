@@ -1,9 +1,11 @@
+import uuid
 from django.contrib.auth.models import User as AuthUser
 from django.db import models
 from django.utils.html import format_html
 
 
 class User(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=128, blank=True)
     auth_user = models.OneToOneField(AuthUser,
                                      on_delete=models.CASCADE,
@@ -15,6 +17,7 @@ class User(models.Model):
 
 
 class App(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=128, blank=True)
     user = models.ForeignKey(User, related_name="apps", blank=True, null=True)
     define_file = models.FileField(upload_to='uploads/app_define_files/',
@@ -35,6 +38,7 @@ class App(models.Model):
 
 
 class NodeType(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=128)
 
     def __str__(self):
@@ -42,6 +46,7 @@ class NodeType(models.Model):
 
 
 class Agent(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user_id = models.CharField(max_length=128, default='usr')
 #     user = models.ForeignKey(User,
 #                              models.SET_NULL,
@@ -64,6 +69,7 @@ class Agent(models.Model):
 
 
 class Job(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=128, default='')
     job_id = models.CharField(max_length=256, default='')
     application = models.ForeignKey(App,
@@ -83,6 +89,7 @@ class Job(models.Model):
 
 
 class Node(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     node_type = models.ForeignKey(NodeType,
                                   related_name="nodes",
                                   null=True,
