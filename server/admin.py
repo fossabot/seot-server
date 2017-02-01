@@ -10,7 +10,7 @@ class AppAdmin(admin.ModelAdmin):
 
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):
-    list_display = ('agent_id', 'user_id', 'ip_addr', 'latest_heartbeat_at')
+    list_display = ('id', 'user_id', 'ip_addr', 'latest_heartbeat_at')
 
 
 @admin.register(User)
@@ -25,7 +25,7 @@ class NodeTypeAdmin(admin.ModelAdmin):
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
-    list_display = ('job_id', 'name', 'application_id')
+    list_display = ('id', 'name', 'application_id')
 
 
 @admin.register(Node)

@@ -46,14 +46,16 @@ class NodeType(models.Model):
 
 
 class Agent(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user_id = models.CharField(max_length=128, default='usr')
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=True)
+    user = models.ForeignKey(User,
+                             related_name="agents",
+                             blank=True,
+                             null=True)
 #     user = models.ForeignKey(User,
 #                              models.SET_NULL,
 #                              related_name='agents',
 #                              blank=True,
 #                              null=True)
-    agent_id = models.CharField(max_length=128, default='agent')
     longitude = models.FloatField(default=0.0)
     latitude = models.FloatField(default=0.0)
     busy = models.BooleanField(default=0)
@@ -71,7 +73,6 @@ class Agent(models.Model):
 class Job(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=128, default='')
-    job_id = models.CharField(max_length=256, default='')
     application = models.ForeignKey(App,
                                     models.SET_NULL,
                                     related_name='jobs',

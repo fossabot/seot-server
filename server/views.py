@@ -41,7 +41,7 @@ def heartbeat_response(request):
     # 存在していた場合はdataで上書き
     # 存在していなければ作成
     # もっと綺麗な方法をあとで探す
-    agent, created = Agent.objects.get_or_create(agent_id=data['agent_id'],
+    agent, created = Agent.objects.get_or_create(id=data['agent_id'],
                                                  user_id=data['user_id'],)
     serializer = AgentSerializer(agent, data=data, partial=True)
     if serializer.is_valid():
