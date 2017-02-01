@@ -1,8 +1,19 @@
+import enum
 import uuid
 from django.contrib.auth.models import User as AuthUser
 from django.db import models
 from django.utils import timezone
 from django.utils.html import format_html
+
+
+class AppStatus(enum.Enum):
+    idle = 1
+    running = 2
+    stopped = 3
+
+    @classmethod
+    def choices(cls):
+        return [(m.value, m.name) for m in cls]
 
 
 class User(models.Model):
@@ -25,6 +36,11 @@ class App(models.Model):
                                    blank=True, null=True)
     upload_time = models.DateTimeField(default=timezone.now)
     hold = models.BooleanField(default=True)
+    status = models.IntegerField(
+        choices=AppStatus.choices(),
+        default=AppStatus.idle.value,
+        verbose_name='App Status'
+    )
 
     def file_link(self):
         if self.yaml_file:
@@ -84,7 +100,12 @@ class Job(models.Model):
                                         related_name='allocated_jobs',
                                         blank=True,
                                         null=True)
-    runnning = models.BooleanField(default=False)
+
+    def running(self):
+        running = True
+        for n in Node.objects.filter(job_id=self.id):
+            running = running and n.running
+        return running
 
     def __str__(self):
         return '%s' % (self.id)
@@ -111,6 +132,7 @@ class Node(models.Model):
                                     related_name="nodes",
                                     blank=True,
                                     null=True)
+    running = models.BooleanField(default=False)
 
     def type_name(self):
         return self.node_type.name

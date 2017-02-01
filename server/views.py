@@ -13,7 +13,7 @@ from rest_framework.renderers import JSONRenderer
 import yaml
 
 from .forms import AppForm
-from .models import Agent, Job, User
+from .models import Agent, AppStatus, Job, Node, User
 from .serializer import NodeSerializer
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
@@ -42,15 +42,24 @@ def heartbeat_response(request):
         agent, created = Agent.objects.get_or_create(id=data['agent_id'],
                                                      user_id=user.id,)
 
-        job = Job.objects.get(allocated_agent_id=agent.id, runnning=True)
-        response = {
-            "run": True,
-            "kill": False,
-            "job_id": job.id
-        }
-        return JSONResponse(response, status=200)
+        job = Job.objects.get(allocated_agent_id=agent.id)
+        if job.application.status == AppStatus.running.value:
+            # Running状態のジョブが存在ス
+            response = {
+                "run": True,
+                "kill": False,
+                "job_id": job.id
+            }
+            return JSONResponse(response, status=200)
+        else:
+            # Running 状態のジョブがない場合のレスポンス
+            response = {
+                "run": False,
+                "kill": False
+            }
+            return JSONResponse(response, status=200)
     except Job.DoesNotExist:
-        # Running 状態のジョブがない場合のレスポンス
+        # ジョブがない場合のレスポンス
         response = {
             "run": False,
             "kill": False
@@ -91,10 +100,49 @@ def job_request(request, job_id):
         return JSONResponse({}, status=400)
 
 
+@csrf_exempt
+@parser_classes((JSONParser, ))
+def job_accept_request(request, job_id):
+    print("In : JOB_ACCEPT_REQUEST")
+
+    # uuidがuuid4に準拠しているかどうか
+    if _validate_uuid4(job_id) is None:
+        return JSONResponse({}, status=400)
+
+    try:
+        job = Job.objects.get(id=job_id)
+        running_nodes = Node.objects.filter(
+            job_id=job.id,
+            job__allocated_agent_id=job.allocated_agent_id
+        )
+        for n in running_nodes:
+            n.running = True
+            n.save()
+
+        nodes = []
+        for n in job.nodes.all():
+            node = {
+                "name": n.name,
+                "type": n.type_name(),
+                "args": n.args,
+                "to": n.to()
+            }
+            nodes.append(node)
+
+        response = {
+            "job_id": str(job.id),
+            "application_id": str(job.application_id),
+            "nodes": nodes
+        }
+        return JSONResponse(response, status=200)
+    except Job.DoesNotExist:
+        return JSONResponse({}, status=400)
+
+
 def _validate_uuid4(uuid):
     return re.match(
-            """[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}
-               -[89ab][0-9a-f]{3}-[0-9a-f]{12}""", uuid)
+            "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}\
+-[89ab][0-9a-f]{3}-[0-9a-f]{12}", uuid)
 
 
 @login_required
