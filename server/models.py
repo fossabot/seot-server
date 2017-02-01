@@ -100,7 +100,12 @@ class Job(models.Model):
                                         related_name='allocated_jobs',
                                         blank=True,
                                         null=True)
-    runnning = models.BooleanField(default=False)
+
+    def running(self):
+        running = True
+        for n in Node.objects.filter(job_id=self.id):
+            running = running and n.running
+        return running
 
     def __str__(self):
         return '%s' % (self.id)
@@ -127,6 +132,7 @@ class Node(models.Model):
                                     related_name="nodes",
                                     blank=True,
                                     null=True)
+    running = models.BooleanField(default=False)
 
     def type_name(self):
         return self.node_type.name

@@ -13,7 +13,7 @@ from rest_framework.renderers import JSONRenderer
 import yaml
 
 from .forms import AppForm
-from .models import Agent, Job, User, App, AppStatus
+from .models import Agent, Job, User, App, AppStatus, Node
 from .serializer import NodeSerializer
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
@@ -44,7 +44,7 @@ def heartbeat_response(request):
 
         job = Job.objects.get(allocated_agent_id=agent.id)
         if job.application.status == AppStatus.running.value:
-            # Running状態のジョブが存在
+            # Running状態のジョブが存在ス
             response = {
                 "run": True,
                 "kill": False,
@@ -111,6 +111,14 @@ def job_accept_request(request, job_id):
 
     try:
         job = Job.objects.get(id=job_id)
+        running_nodes = Node.objects.filter(
+            job_id=job.id,
+            job__allocated_agent_id=job.allocated_agent_id
+        )
+        for n in running_nodes:
+            n.running = True
+            n.save()
+
         nodes = []
         for n in job.nodes.all():
             node = {
