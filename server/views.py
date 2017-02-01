@@ -13,7 +13,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 
 from .forms import AppForm
-from .models import Agent, Node, User
+from .models import Agent, Node, User, Job
 from .serializer import AgentSerializer, NodeSerializer
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
@@ -36,29 +36,30 @@ def heartbeat_response(request):
 
     data = JSONParser().parse(request)
     data['ip_addr'] = agent_ip_addr
-    print(data)
-    # 既存のモデルオブジェクトがあるかDBから探して、
-    # 存在していた場合はdataで上書き
-    # 存在していなければ作成
-    # もっと綺麗な方法をあとで探す
-    agent, created = Agent.objects.get_or_create(id=data['agent_id'],
-                                                 user_id=data['user_id'],)
-    serializer = AgentSerializer(agent, data=data, partial=True)
-    if serializer.is_valid():
-        """
-        ここにheartbeat受信時の処理を書く
-        * responseを返す
-            * Appモデルのインスタンスのうち、agentの割当オファーをしているもの
-              を探す
-            * heartbeatを送ってきたagentにオファーをだすAppを決める
-            * AppのIDを読み取る
-        """
-        serializer.save()
+
+    try:
+        user = User.objects.get(name=data['user_name'])
+        agent, created = Agent.objects.get_or_create(id=data['agent_id'],
+                                                     user_id=user.id,)
+
+        job = Job.objects.get(allocated_agent_id=agent.id, runnning=True)
         response = {
-                "job_offer": False,
+            "run": True,
+            "kill": False,
+            "job_id": job.id
         }
         return JSONResponse(response, status=200)
-    return JSONResponse(serializer.errors, status=400)
+    except Job.DoesNotExist:
+        # Running 状態のジョブがない場合のレスポンス
+        print("Does Not Exist : Job")
+        response = {
+            "run": False,
+            "kill": False
+        }
+        return JSONResponse(response, status=200)
+    except User.DoesNotExist:
+        # ユーザが存在しない場合
+        return JSONResponse({}, status=400)
 
 
 @login_required

@@ -6,7 +6,7 @@ from django.utils.html import format_html
 
 class User(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=128, blank=True)
+    name = models.CharField(max_length=128, blank=True, unique=True)
     auth_user = models.OneToOneField(AuthUser,
                                      on_delete=models.CASCADE,
                                      blank=True,
@@ -67,7 +67,7 @@ class Agent(models.Model):
     ip_addr = models.CharField(max_length=64, default='127.0.0.1')
 
     def __str__(self):
-        return '%s' % (self.agent_id)
+        return '%s' % (self.id)
 
 
 class Job(models.Model):
