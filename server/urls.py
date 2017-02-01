@@ -10,5 +10,4 @@ urlpatterns = [
     url(r'^complete/', views.complete, name='complete'),
     url(r'^heartbeat$', views.heartbeat_response),
     url(r'^job/(?P<job_id>.+)', views.job_request)
-#    url(r'^job/(<uuid>.+)/accept', views.job_request)
 ]
