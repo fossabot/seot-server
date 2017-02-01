@@ -5,7 +5,7 @@ from .models import Agent, App, Job, Node, NodeType, User
 
 @admin.register(App)
 class AppAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name')
+    list_display = ('id', 'name', 'status')
 
 
 @admin.register(Agent)
