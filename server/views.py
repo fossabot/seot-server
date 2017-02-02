@@ -11,9 +11,8 @@ from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 
 import yaml
-
 from .forms import AppForm
-from .models import Agent, AppStatus, Job, Node, User
+from .models import Agent, AppStatus, Job, Node, NodeType, User
 from .serializer import NodeSerializer
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
@@ -39,8 +38,9 @@ def heartbeat_response(request):
 
     try:
         user = User.objects.get(name=data['user_name'])
-        agent, created = Agent.objects.get_or_create(id=data['agent_id'],
-                                                     user_id=user.id,)
+        agent, created = Agent.objects.get_or_create(
+                id=data['agent_id'],
+                user_id=user.id,)
 
         job = Job.objects.get(allocated_agent_id=agent.id)
         if job.application.status == AppStatus.running.value:
@@ -155,51 +155,176 @@ def upload_file(request):
             user = User.objects.get(auth_user=request.user)
             app.user = user
             app.save()
-            nodes = make_nodes(app)
-            make_jobs(app, nodes)
+            nodes = app_to_nodes(app)
+            if nodes is not None:
+                make_jobs(app, nodes)
             return HttpResponseRedirect('/complete/')
     else:
         form = AppForm(initial={'user': request.user.username})
     return render(request, 'server/form.html', {'form': form})
 
 
-def make_nodes(app):
+# appオブジェクトを受取りnodeオブジェクト群を生成
+def app_to_nodes(app):
     define_file = app.define_file
     define_file.open(mode='rb')
     nodes_data = yaml.load(define_file)
     define_file.close()
-
-    already_exist_nodes = {}
-    while len(nodes_data) > 0:
-        for node_data in nodes_data:
-            if 'to' not in node_data or next_nodes_are_already_exist(
-                    already_exist_nodes, node_data['to']):
-                if 'args' in node_data:
-                    node_data['args_str'] = json.dumps(node_data['args'])
-                node_serializer = NodeSerializer(data=node_data)
-                if node_serializer.is_valid():
-                    node = node_serializer.save()
-                    already_exist_nodes[node.name] = node
-                    if 'to' in node_data:
-                        for next_node_name in node_data['to']:
-                            node.next_nodes.add(
-                                    already_exist_nodes[next_node_name])
-                    app.nodes.add(node)
-                    nodes_data.remove(node_data)
-                else:
-                    print(node_serializer.errors)
-    return already_exist_nodes
+    return nodes_data_to_obj(nodes_data)
 
 
-def next_nodes_are_already_exist(exist_nodes, next_nodes):
-    for node in next_nodes:
-        if node not in exist_nodes:
-            return False
-    return True
+# nodeオブジェクトデータのリストからnodeオブジェクト生成
+def nodes_data_to_obj(nodes_data):
+    exist_nodes = []
+    while True:
+        node_gen = [n for n in nodes_data if 'to' not in n or
+                    list_contains_list([n.name for n in exist_nodes], n['to'])]
+        for node_data in node_gen:
+            node = serialize_node(node_data)
+            if node is not None:
+                exist_nodes.append(node)
+                if 'to' in node_data:
+                    [node.next_nodes.add(n)
+                     for n in exist_nodes if n.name in node_data['to']]
+            nodes_data.remove(node_data)
+        if len(nodes_data) == 0:
+            return exist_nodes
+        elif len(exist_nodes) == 0:
+            return None
 
 
+# python辞書型データからserializerを通してnodeオブジェクト保存
+def serialize_node(node_data):
+    # シリアライザに突っ込む前に、
+    # argsがあればjson文字列に変換してargs_strフィールドに格納
+    # もっとスマートな方法探す
+    if 'args' in node_data:
+        node_data['args_str'] = json.dumps(node_data['args'])
+    serializer = NodeSerializer(data=node_data)
+    if serializer.is_valid():
+        return serializer.save()
+    else:
+        print(serializer.errors)
+        return None
+
+
+# parent_list内にchild_listの要素がすべて含まれているか
+def list_contains_list(parent_list, child_list):
+    return [n for n in parent_list if n in child_list] == child_list
+
+
+# nodeが始端ノードであるか判定
+def is_source(node):
+    num = node.before_nodes.count()
+    if num == 0:
+        return True
+    return False
+
+
+# nodeをjob, appにadd
+# addした後next_nodesを更新
+def add_node(node, job, app, next_nodes):
+    job.nodes.add(node)
+    app.nodes.add(node)
+    for next_node in node.next_nodes.all():
+        # next_nodes内に重複要素が出ないよう確認してからappend
+        if next_node.name not in [n.name for n in next_nodes]:
+            next_nodes.append(next_node)
+    if node in next_nodes:
+        next_nodes.remove(node)
+
+
+# next_nodesのうちagentで動かせるノードを1つ返す
+# すでにjobが存在していてわりあてるagentも決まっているとき、
+# このメソッドで次に割り当てるnodeを参照する
+def find_next_node(next_nodes, agent):
+    executable_nodes = [
+            node for node in next_nodes if
+            agent.available_node_types.filter(name=node.node_type.name)]
+    if executable_nodes:
+        node = executable_nodes[0]
+        next_nodes.remove(node)
+        return node
+        # return executable_nodes.pop()
+    return None
+
+
+# job内の末端ノードで、かつ、別job内に位置するnext_nodesを持つノードを
+# 選び出し、そのノードとnext_nodesとの間に ZMQSink / ZMQSourceのペアを挿入
+def create_zmq_pare(app):
+    zmq_sink_type = NodeType. objects.get(name="ZMQSink")
+    zmq_source_type = NodeType.objects.get(name="ZMQSource")
+
+    for node in app.nodes.all():
+        for n in node.next_nodes.exclude(job=node.job):
+            zmq_sink = Node.objects.create(
+                node_type=zmq_sink_type,
+                name=node.name + "_to_" + n.name + "_sink")
+            zmq_source = Node.objects.create(
+                node_type=zmq_source_type,
+                name=node.name + "_to_" + n.name + "_source")
+            node.next_nodes.remove(n)
+            node.next_nodes.add(zmq_sink)
+            zmq_sink.next_nodes.add(zmq_source)
+            zmq_source.next_nodes.add(n)
+
+            node.job.nodes.add(zmq_sink)
+            n.job.nodes.add(zmq_source)
+
+            app.nodes.add(zmq_sink)
+            app.nodes.add(zmq_source)
+
+
+# 新しいjobをnameを指定して生成
+# job未割り当てなnodeから適当に一つ選択
+# 選択したnodeを動かせるagentを選択
+def create_new_job(name, next_nodes, asigned_agents):
+    job = Job.objects.create(name=name)
+    node = next_nodes.pop()
+    agent_list = [a for a in Agent.objects.filter(
+        available_node_types__name__contains=node.node_type.name)
+        if a not in asigned_agents]
+    if agent_list:
+        agent = agent_list.pop()
+        agent.allocated_jobs.add(job)
+        return job, node, agent
+    else:
+        return None, None, None
+
+
+# appからjob群を生成
 def make_jobs(app, nodes):
-    pass
+    index = 0
+    jobs = []
+    already_asigned_agents = []
+    next_nodes = [n for n in nodes if is_source(n)]
+    job, node, agent = create_new_job(
+            str(app.id) + "_" + str(index), next_nodes, already_asigned_agents)
+    index += 1
+    while True:
+        add_node(node, job, app, next_nodes)
+        nodes.remove(node)
+        if len(nodes) == 0:
+            app.jobs.add(job)
+            job.save()
+            jobs.append(job)
+            break
+        node = find_next_node(next_nodes, agent)
+        if node is not None:
+            pass
+        else:
+            app.jobs.add(job)
+            job.save()
+            jobs.append(job)
+            already_asigned_agents.append(agent)
+            job, node, agent = create_new_job(
+                str(app.id) + "_" + str(index),
+                next_nodes, already_asigned_agents)
+            index += 1
+            if job is None:
+                return None
+    create_zmq_pare(app)
+    return jobs
 
 
 def complete(request):
