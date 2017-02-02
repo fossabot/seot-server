@@ -3,14 +3,6 @@ image: python:3
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
 
-before_script:
-  - pip install -U pip setuptools
-  - pip install -r requirements.txt
-  - mkdir -p ~/.ssh
-  - echo "$DOKKU_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-  - chmod 600 ~/.ssh/id_rsa
-  - ssh-keyscan -H 'mars.ais.cmc.osaka-u.ac.jp' >> ~/.ssh/known_hosts
-
 cache:
   paths:
     - "$CI_PROJECT_DIR/pip-cache"
@@ -23,6 +15,8 @@ stages:
 check_style:
   stage: test
   script:
+    - pip install -U pip setuptools
+    - pip install -r requirements.txt
     - flake8
 
 deploy_to_dokku:
@@ -31,6 +25,10 @@ deploy_to_dokku:
     name: staging
     url: http://seot-staging.mars.ais.cmc.osaka-u.ac.jp
   script:
-    - git push dokku@mars.ais.cmc.osaka-u.ac.jp:seot-staging $CI_BUILD_REF:master
+    - mkdir -p ~/.ssh
+    - echo "$DOKKU_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H 'mars.ais.cmc.osaka-u.ac.jp' >> ~/.ssh/known_hosts
+    - git push -f dokku@mars.ais.cmc.osaka-u.ac.jp:seot-staging $CI_BUILD_REF:master
   only:
     - master
