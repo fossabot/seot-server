@@ -4,6 +4,8 @@ variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/pip-cache"
 
 before_script:
+  - pip install -U pip setuptools
+  - pip install -r requirements.txt
   - mkdir -p ~/.ssh
   - echo "$DOKKU_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
   - chmod 600 ~/.ssh/id_rsa
