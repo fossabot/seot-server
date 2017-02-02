@@ -6,6 +6,10 @@ variables:
 before_script:
   - pip install -U pip setuptools
   - pip install -r requirements.txt
+  - mkdir -p ~/.ssh
+  - echo "$DOKKU_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+  - chmod 600 ~/.ssh/id_rsa
+  - ssh-keyscan -H 'mars.ais.cmc.osaka-u.ac.jp' >> ~/.ssh/known_hosts
 
 cache:
   paths:
@@ -14,8 +18,19 @@ cache:
 
 stages:
   - test
+  - deploy
 
-test_job:
+check_style:
   stage: test
   script:
     - flake8
+
+deploy_to_dokku:
+  stage: deploy
+  environment:
+    name: staging
+    url: http://seot-staging.mars.ais.cmc.osaka-u.ac.jp
+  script:
+    - git push dokku@mars.ais.cmc.osaka-u.ac.jp:seot-staging master
+  only:
+    - master

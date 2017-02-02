@@ -95,3 +95,7 @@ ENV/
 
 # SQLite3 DB File
 *.sqlite3
+
+# Placeholder directory for collected static files
+staticfiles/*
+!staticfiles/.gitkeep
