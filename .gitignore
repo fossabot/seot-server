@@ -95,7 +95,3 @@ ENV/
 
 # SQLite3 DB File
 *.sqlite3
-
-# migration files
-./server/migrations/*
-./accounts/migrations/*
