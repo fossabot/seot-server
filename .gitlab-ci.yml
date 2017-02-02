@@ -31,6 +31,6 @@ deploy_to_dokku:
     name: staging
     url: http://seot-staging.mars.ais.cmc.osaka-u.ac.jp
   script:
-    - git push dokku@mars.ais.cmc.osaka-u.ac.jp:seot-staging master
+    - git push dokku@mars.ais.cmc.osaka-u.ac.jp:seot-staging $CI_BUILD_REF
   only:
     - master
