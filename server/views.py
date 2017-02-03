@@ -85,9 +85,11 @@ def job_request(request, job_id):
             node = {
                 "name": n.name,
                 "type": n.type_name(),
-                "args": n.args,
                 "to": n.to()
             }
+            print(n.args)
+            if n.args:
+                node["args"] = json.loads(n.args)
             nodes.append(node)
 
         response = {
@@ -95,6 +97,7 @@ def job_request(request, job_id):
             "application_id": str(job.application_id),
             "nodes": nodes
         }
+        print(response)
         return JSONResponse(response, status=200)
     except Job.DoesNotExist:
         return JSONResponse({}, status=400)
@@ -103,8 +106,6 @@ def job_request(request, job_id):
 @csrf_exempt
 @parser_classes((JSONParser, ))
 def job_accept_request(request, job_id):
-    print("In : JOB_ACCEPT_REQUEST")
-
     # uuidがuuid4に準拠しているかどうか
     if _validate_uuid4(job_id) is None:
         return JSONResponse({}, status=400)
