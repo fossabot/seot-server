@@ -119,8 +119,10 @@ class Node(models.Model):
                                   blank=True)
     args = models.CharField(max_length=256, default='')
     next_nodes = models.ManyToManyField('self',
+                                        symmetrical=False,
                                         related_name="before_nodes",
-                                        blank=True,)
+                                        null=True,
+                                        blank=True)
     name = models.CharField(max_length=128, default='')
     job = models.ForeignKey(Job,
                             models.SET_NULL,
