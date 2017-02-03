@@ -31,7 +31,7 @@ class JobAdmin(admin.ModelAdmin):
 @admin.register(Node)
 class NodeAdmin(admin.ModelAdmin):
     list_display = ('name', 'node_type', '_next_nodes',
-                    'job', 'application', 'args')
+                    'job', 'args')
 
     def _next_nodes(self, obj):
         if hasattr(obj, 'to'):
