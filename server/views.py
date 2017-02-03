@@ -4,6 +4,7 @@ import os
 import re
 
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -13,7 +14,7 @@ from rest_framework.renderers import JSONRenderer
 
 import yaml
 from .forms import AppForm
-from .models import Agent, AppStatus, Job, JobStatus, Node, NodeType, User
+from .models import Agent, App, AppStatus, Job, JobStatus, Node, NodeType, User
 from .serializer import NodeSerializer
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
@@ -213,6 +214,25 @@ def _validate_uuid4(uuid):
     return re.match(
             "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}\
 -[89ab][0-9a-f]{3}-[0-9a-f]{12}", uuid)
+
+
+@login_required
+def ctrl_apps(request):
+    app_list = []
+    app_str_list = []
+    if request.method == 'POST':
+        pass
+    else:
+        try:
+            user = User.objects.get(auth_user__username=request.user.username)
+            for app in App.objects.filter(user=user):
+                app_list.append(app)
+        except ObjectDoesNotExist:
+            pass
+    for app in app_list:
+        app_str_list.append(app.name)
+    print(app_str_list)
+    return render(request, 'server/ctrl_apps.html', {'app_list': app_str_list})
 
 
 @login_required
