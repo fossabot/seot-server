@@ -1,0 +1,12 @@
+{% extends "admin/base.html" %}
+
+{% block title %}アプリ起動/停止管理画面{% endblock title %}
+{% block content %}
+    {% csrf_token %}
+    <p>
+    hello {{ request.user.username }}
+    </p>
+    {% for o in app_list %}
+    <p>{{ o }}</p>
+    {% endfor %}
+{% endblock content %}
