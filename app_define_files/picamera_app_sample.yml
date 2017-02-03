@@ -1,0 +1,18 @@
+- name: cam01
+  type: PiCameraSource
+  to:
+    - docker
+- name: cam02
+  type: PiCameraSource
+  to:
+    - docker
+- name: cam03
+  type: PiCameraSource
+  to:
+    - docker
+- name: db
+  type: MongoDBSink
+- name: docker
+  type: DockerTransformer
+  to:
+      - db
