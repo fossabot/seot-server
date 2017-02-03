@@ -227,25 +227,51 @@ def add_node(node, job, app, next_nodes):
     job.nodes.add(node)
     app.nodes.add(node)
     for next_node in node.next_nodes.all():
-        # next_nodes内に重複要素が出ないよう確認してからappend
-        if next_node.name not in [n.name for n in next_nodes]:
+        # next_nodes内に重複要素が出ないよう確認、
+        # また、next_nodesが既にjobに割り当てられていないか確認してからappend
+        if next_node.name not in [n.name for n in next_nodes] and\
+                next_node.job is None:
             next_nodes.append(next_node)
     if node in next_nodes:
         next_nodes.remove(node)
 
 
+# ジョブの中に与えられたノードタイプのノードがあるか？
+def type_of_node_in_job(node_type_name, job):
+    if job.nodes is not None and node_type_name is not None:
+        return job.nodes.filter(
+                node_type__name=node_type_name).exists()
+    return False
+
+
+# ノードタイプがセンサ系か否か
+# センサ系ならノード名文字列を、そうでなければNullを返す
+def type_of_sensor(node):
+    if node.node_type is not None:
+        if node.node_type.name in [
+                "StubSenseHatSource",
+                "SenseHatSource",
+                "PiCameraSource"]:
+            return node.node_type.name
+    return None
+
+
 # next_nodesのうちagentで動かせるノードを1つ返す
+# また、jobへ既にセンサノードが割り当てられている時は、
+# 同じタイプのセンサノードは割り当てない
 # すでにjobが存在していてわりあてるagentも決まっているとき、
 # このメソッドで次に割り当てるnodeを参照する
-def find_next_node(next_nodes, agent):
+def find_next_node(next_nodes, job):
     executable_nodes = [
-            node for node in next_nodes if
-            agent.available_node_types.filter(name=node.node_type.name)]
+            node for node in next_nodes
+            if job.allocated_agent.available_node_types.filter(
+                name=node.node_type.name)
+            and not type_of_node_in_job(type_of_sensor(node), job)
+            ]
     if executable_nodes:
         node = executable_nodes[0]
         next_nodes.remove(node)
         return node
-        # return executable_nodes.pop()
     return None
 
 
@@ -309,7 +335,7 @@ def make_jobs(app, nodes):
             job.save()
             jobs.append(job)
             break
-        node = find_next_node(next_nodes, agent)
+        node = find_next_node(next_nodes, job)
         if node is not None:
             pass
         else:
@@ -322,6 +348,8 @@ def make_jobs(app, nodes):
                 next_nodes, already_asigned_agents)
             index += 1
             if job is None:
+                print(jobs)
+                print("couldn't create job")
                 return None
     create_zmq_pare(app)
     return jobs
