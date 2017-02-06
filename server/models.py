@@ -8,8 +8,22 @@ from django.utils.html import format_html
 
 class AppStatus(enum.Enum):
     idle = 1
-    running = 2
-    stopped = 3
+    launching = 2
+    running = 3
+    stopping = 4
+    stopped = 5
+
+    @classmethod
+    def choices(cls):
+        return [(m.value, m.name) for m in cls]
+
+
+class JobStatus(enum.Enum):
+    idle = 1
+    accept_pending = 2
+    running = 3
+    stop_pending = 4
+    stopped = 5
 
     @classmethod
     def choices(cls):
