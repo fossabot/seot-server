@@ -49,7 +49,6 @@ class App(models.Model):
     define_file = models.FileField(upload_to='uploads/app_define_files/',
                                    blank=True, null=True)
     upload_time = models.DateTimeField(default=timezone.now)
-    hold = models.BooleanField(default=True)
     status = models.IntegerField(
         choices=AppStatus.choices(),
         default=AppStatus.idle.value,
@@ -114,6 +113,11 @@ class Job(models.Model):
                                         related_name='allocated_jobs',
                                         blank=True,
                                         null=True)
+    status = models.IntegerField(
+        choices=JobStatus.choices(),
+        default=JobStatus.idle.value,
+        verbose_name='Job Status'
+    )
 
     def running(self):
         running = True
