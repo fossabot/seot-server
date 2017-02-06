@@ -12,7 +12,7 @@ from rest_framework.renderers import JSONRenderer
 
 import yaml
 from .forms import AppForm
-from .models import Agent, AppStatus, Job, Node, NodeType, User
+from .models import Agent, AppStatus, Job, JobStatus, Node, NodeType, User
 from .serializer import NodeSerializer
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
@@ -41,22 +41,24 @@ def heartbeat_response(request):
         agent, created = Agent.objects.get_or_create(
                 id=data['agent_id'],
                 user_id=user.id,)
-
         job = Job.objects.get(allocated_agent_id=agent.id)
-        if job.application.status == AppStatus.running.value:
-            # Running状態のジョブが存在ス
+        if job.application.status == AppStatus.launching.value and\
+                job.status == JobStatus.idle.value:
+            # AppがlaunchingでJobがidleのとき
             response = {
                 "run": job.id,
-                "kill": False,
+                "kill": None,
             }
-            return JSONResponse(response, status=200)
-        else:
-            # Running 状態のジョブがない場合のレスポンス
+            job.status = JobStatus.accept_pending.value
+        elif job.application.status == AppStatus.stopping.value and\
+                job.status == JobStatus.running.value:
+            # AppがstoppingでJobがrunnningのとき
             response = {
                 "run": None,
-                "kill": False
+                "kill": job.id,
             }
-            return JSONResponse(response, status=200)
+            job.status = JobStatus.stop_pending.value
+        job.save()
     except Job.DoesNotExist:
         # ジョブがない場合のレスポンス
         response = {
@@ -66,6 +68,53 @@ def heartbeat_response(request):
         return JSONResponse(response, status=200)
     except User.DoesNotExist:
         # ユーザが存在しない場合
+        return JSONResponse({}, status=400)
+
+
+def job_request_base(request, job_id, request_status):
+
+    # uuidがuuid4に準拠しているかどうか
+    if _validate_uuid4(job_id) is None:
+        return JSONResponse({}, status=400)
+
+    try:
+        job = Job.objects.get(id=job_id)
+        running_nodes = Node.objects.filter(
+            job_id=job.id,
+            job__allocated_agent_id=job.allocated_agent_id
+        )
+        for n in running_nodes:
+            if request_status == "accept":
+                n.running = True
+            elif request_status == "stop":
+                n.running = False
+            n.save()
+
+        nodes = []
+        for n in job.nodes.all():
+            node = {
+                "name": n.name,
+                "type": n.type_name(),
+                "args": n.args,
+                "to": n.to()
+            }
+            nodes.append(node)
+
+        if request_status == "accept" and\
+                job.status == JobStatus.accept_pending.value:
+            job.status = JobStatus.running.value
+        elif request_status == "stop" and\
+                job.status == JobStatus.stop_pending.value:
+            job.status = JobStatus.stopped.value
+        job.save()
+
+        response = {
+            "job_id": str(job.id),
+            "application_id": str(job.application_id),
+            "nodes": nodes
+        }
+        return JSONResponse(response, status=200)
+    except Job.DoesNotExist:
         return JSONResponse({}, status=400)
 
 
@@ -105,38 +154,13 @@ def job_request(request, job_id):
 @csrf_exempt
 @parser_classes((JSONParser, ))
 def job_accept_request(request, job_id):
-    # uuidがuuid4に準拠しているかどうか
-    if _validate_uuid4(job_id) is None:
-        return JSONResponse({}, status=400)
+    return job_request_base(request, job_id, "accept")
 
-    try:
-        job = Job.objects.get(id=job_id)
-        running_nodes = Node.objects.filter(
-            job_id=job.id,
-            job__allocated_agent_id=job.allocated_agent_id
-        )
-        for n in running_nodes:
-            n.running = True
-            n.save()
 
-        nodes = []
-        for n in job.nodes.all():
-            node = {
-                "name": n.name,
-                "type": n.type_name(),
-                "args": n.args,
-                "to": n.to()
-            }
-            nodes.append(node)
-
-        response = {
-            "job_id": str(job.id),
-            "application_id": str(job.application_id),
-            "nodes": nodes
-        }
-        return JSONResponse(response, status=200)
-    except Job.DoesNotExist:
-        return JSONResponse({}, status=400)
+@csrf_exempt
+@parser_classes((JSONParser, ))
+def job_stop_request(request, job_id):
+    return job_request_base(request, job_id, "stop")
 
 
 def _validate_uuid4(uuid):
