@@ -8,8 +8,22 @@ from django.utils.html import format_html
 
 class AppStatus(enum.Enum):
     idle = 1
-    running = 2
-    stopped = 3
+    launching = 2
+    running = 3
+    stopping = 4
+    stopped = 5
+
+    @classmethod
+    def choices(cls):
+        return [(m.value, m.name) for m in cls]
+
+
+class JobStatus(enum.Enum):
+    idle = 1
+    accept_pending = 2
+    running = 3
+    stop_pending = 4
+    stopped = 5
 
     @classmethod
     def choices(cls):
@@ -35,7 +49,6 @@ class App(models.Model):
     define_file = models.FileField(upload_to='uploads/app_define_files/',
                                    blank=True, null=True)
     upload_time = models.DateTimeField(default=timezone.now)
-    hold = models.BooleanField(default=True)
     status = models.IntegerField(
         choices=AppStatus.choices(),
         default=AppStatus.idle.value,
@@ -100,6 +113,11 @@ class Job(models.Model):
                                         related_name='allocated_jobs',
                                         blank=True,
                                         null=True)
+    status = models.IntegerField(
+        choices=JobStatus.choices(),
+        default=JobStatus.idle.value,
+        verbose_name='Job Status'
+    )
 
     def running(self):
         running = True
