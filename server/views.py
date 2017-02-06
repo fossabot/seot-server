@@ -46,22 +46,21 @@ def heartbeat_response(request):
         if job.application.status == AppStatus.running.value:
             # Running状態のジョブが存在ス
             response = {
-                "run": True,
+                "run": job.id,
                 "kill": False,
-                "job_id": job.id
             }
             return JSONResponse(response, status=200)
         else:
             # Running 状態のジョブがない場合のレスポンス
             response = {
-                "run": False,
+                "run": None,
                 "kill": False
             }
             return JSONResponse(response, status=200)
     except Job.DoesNotExist:
         # ジョブがない場合のレスポンス
         response = {
-            "run": False,
+            "run": None,
             "kill": False
         }
         return JSONResponse(response, status=200)
