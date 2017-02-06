@@ -1,3 +1,4 @@
+import enum
 import json
 import os
 import re
@@ -15,6 +16,15 @@ from .forms import AppForm
 from .models import Agent, AppStatus, Job, JobStatus, Node, NodeType, User
 from .serializer import NodeSerializer
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
+
+
+class RequestStatus(enum.Enum):
+    accept = 1
+    stop = 2
+
+    @classmethod
+    def choice(cls):
+        return [(m.value, m.name) for m in cls]
 
 
 class JSONResponse(HttpResponse):
@@ -50,6 +60,8 @@ def heartbeat_response(request):
                 "kill": None,
             }
             job.status = JobStatus.accept_pending.value
+            job.save()
+            return JSONResponse(response, status=200)
         elif job.application.status == AppStatus.stopping.value and\
                 job.status == JobStatus.running.value:
             # AppがstoppingでJobがrunnningのとき
@@ -58,12 +70,19 @@ def heartbeat_response(request):
                 "kill": job.id,
             }
             job.status = JobStatus.stop_pending.value
-        job.save()
+            job.save()
+            return JSONResponse(response, status=200)
+        else:
+            response = {
+                "run": None,
+                "kill": None,
+            }
+            return JSONResponse(response, status=200)
     except Job.DoesNotExist:
         # ジョブがない場合のレスポンス
         response = {
             "run": None,
-            "kill": False
+            "kill": None,
         }
         return JSONResponse(response, status=200)
     except User.DoesNotExist:
@@ -84,9 +103,9 @@ def job_request_base(request, job_id, request_status):
             job__allocated_agent_id=job.allocated_agent_id
         )
         for n in running_nodes:
-            if request_status == "accept":
+            if request_status == RequestStatus.accept.value:
                 n.running = True
-            elif request_status == "stop":
+            elif request_status == RequestStatus.stop.value:
                 n.running = False
             n.save()
 
@@ -100,13 +119,28 @@ def job_request_base(request, job_id, request_status):
             }
             nodes.append(node)
 
-        if request_status == "accept" and\
+        # acceptリクエストが来て、Jobステータスがaccept_pendingのとき
+        # Jobステータスをrunnningに
+        if request_status == RequestStatus.accept.value and\
                 job.status == JobStatus.accept_pending.value:
             job.status = JobStatus.running.value
-        elif request_status == "stop" and\
+            job.save()
+            # appの全jobがrunnningのとき、AppStatusをrunnningに
+            if not job.application.jobs.exclude(
+                    status=JobStatus.running.value).exists():
+                job.application.status = AppStatus.running.value
+                job.application.save()
+        # stopリクエストが来て、jobステータスがstop_pendingのとき
+        # jobステータスをstoppedに
+        elif request_status == RequestStatus.stop.value and\
                 job.status == JobStatus.stop_pending.value:
             job.status = JobStatus.stopped.value
-        job.save()
+            job.save()
+            # appの全jobがstoppedのとき、AppStatusをstoppedに
+            if not job.application.jobs.exclude(
+                    status=JobStatus.stopped.value).exists():
+                job.application.status = AppStatus.stopped.value
+                job.application.save()
 
         response = {
             "job_id": str(job.id),
@@ -154,13 +188,13 @@ def job_request(request, job_id):
 @csrf_exempt
 @parser_classes((JSONParser, ))
 def job_accept_request(request, job_id):
-    return job_request_base(request, job_id, "accept")
+    return job_request_base(request, job_id, RequestStatus.accept.value)
 
 
 @csrf_exempt
 @parser_classes((JSONParser, ))
 def job_stop_request(request, job_id):
-    return job_request_base(request, job_id, "stop")
+    return job_request_base(request, job_id, RequestStatus.stop.value)
 
 
 def _validate_uuid4(uuid):
