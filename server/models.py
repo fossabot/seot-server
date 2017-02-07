@@ -11,7 +11,6 @@ class AppStatus(enum.Enum):
     launching = 2
     running = 3
     stopping = 4
-    stopped = 5
 
     @classmethod
     def choices(cls):
@@ -23,7 +22,6 @@ class JobStatus(enum.Enum):
     accept_pending = 2
     running = 3
     stop_pending = 4
-    stopped = 5
 
     @classmethod
     def choices(cls):

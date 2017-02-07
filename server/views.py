@@ -141,15 +141,15 @@ def job_request_base(request, job_id, request_status):
                 job.application.status = AppStatus.running.value
                 job.application.save()
         # stopリクエストが来て、jobステータスがstop_pendingのとき
-        # jobステータスをstoppedに
+        # jobステータスをidleに
         elif request_status == RequestStatus.stop.value and\
                 job.status == JobStatus.stop_pending.value:
-            job.status = JobStatus.stopped.value
+            job.status = JobStatus.idle.value
             job.save()
-            # appの全jobがstoppedのとき、AppStatusをstoppedに
+            # appの全jobがidleのとき、AppStatusをidleに
             if not job.application.jobs.exclude(
-                    status=JobStatus.stopped.value).exists():
-                job.application.status = AppStatus.stopped.value
+                    status=JobStatus.idle.value).exists():
+                job.application.status = AppStatus.idle.value
                 job.application.save()
 
         response = {
