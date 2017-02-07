@@ -34,7 +34,7 @@ class NodeAdmin(admin.ModelAdmin):
                     'job', 'args')
 
     def _next_nodes(self, obj):
-        if hasattr(obj, 'to'):
+        if hasattr(obj, 'next_nodes'):
             return ','.join([node.name for node in obj.next_nodes.all()])
         else:
             return "this node has no next nodes."

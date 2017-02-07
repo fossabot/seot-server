@@ -135,7 +135,7 @@ class Node(models.Model):
                                   related_name="nodes",
                                   null=True,
                                   blank=True)
-    args = models.CharField(max_length=256, default='')
+    args = models.CharField(max_length=256, default='', blank=True, null=True)
     next_nodes = models.ManyToManyField('self',
                                         symmetrical=False,
                                         related_name="before_nodes",
