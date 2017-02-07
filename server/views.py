@@ -34,6 +34,15 @@ class JSONResponse(HttpResponse):
         super(JSONResponse, self).__init__(content, **kwargs)
 
 
+def nodetypes_create_and_add(agent, nodetypes_data):
+    agent.available_node_types.clear()
+    for nodetype_data in nodetypes_data:
+        node_type, created = NodeType.objects.get_or_create(
+                name=str(nodetype_data))
+        agent.available_node_types.add(node_type)
+        node_type.save()
+
+
 @csrf_exempt
 @api_view(['POST'])
 @parser_classes((JSONParser, ))
@@ -51,6 +60,7 @@ def heartbeat_response(request):
         agent, created = Agent.objects.get_or_create(
                 id=data['agent_id'],
                 user_id=user.id,)
+        nodetypes_create_and_add(agent, data['nodes'])
         job = Job.objects.get(allocated_agent_id=agent.id)
         if job.application.status == AppStatus.launching.value and\
                 job.status == JobStatus.idle.value:
