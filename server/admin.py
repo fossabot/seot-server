@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Agent, App, Job, Node, NodeType, User
+from .models import Agent, App, Job, Node, NodeType
 
 
 @admin.register(App)
@@ -11,11 +11,6 @@ class AppAdmin(admin.ModelAdmin):
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):
     list_display = ('id', 'user_id', 'ip_addr', 'latest_heartbeat_at')
-
-
-@admin.register(User)
-class UserAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name')
 
 
 @admin.register(NodeType)

@@ -1,6 +1,6 @@
 import enum
 import uuid
-from django.contrib.auth.models import User as AuthUser
+from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 from django.utils.html import format_html
@@ -26,18 +26,6 @@ class JobStatus(enum.Enum):
     @classmethod
     def choices(cls):
         return [(m.value, m.name) for m in cls]
-
-
-class User(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=128, blank=True, unique=True)
-    auth_user = models.OneToOneField(AuthUser,
-                                     on_delete=models.CASCADE,
-                                     blank=True,
-                                     null=True,)
-
-    def __str__(self):
-        return '%s' % (self.name)
 
 
 class App(models.Model):
@@ -79,11 +67,6 @@ class Agent(models.Model):
                              related_name="agents",
                              blank=True,
                              null=True)
-#     user = models.ForeignKey(User,
-#                              models.SET_NULL,
-#                              related_name='agents',
-#                              blank=True,
-#                              null=True)
     longitude = models.FloatField(default=0.0)
     latitude = models.FloatField(default=0.0)
     created_at = models.DateTimeField(default=timezone.now)

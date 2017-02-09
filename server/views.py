@@ -4,6 +4,7 @@ import os
 import re
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
@@ -14,7 +15,7 @@ from rest_framework.renderers import JSONRenderer
 
 import yaml
 from .forms import AppForm
-from .models import Agent, App, AppStatus, Job, JobStatus, Node, NodeType, User
+from .models import Agent, App, AppStatus, Job, JobStatus, Node, NodeType
 from .serializer import NodeSerializer
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
@@ -57,7 +58,7 @@ def heartbeat_response(request):
     data['ip_addr'] = agent_ip_addr
 
     try:
-        user = User.objects.get(name=data['user_name'])
+        user = User.objects.get(username=data['user_name'])
         agent, created = Agent.objects.get_or_create(
                 id=data['agent_id'],
                 user_id=user.id,
@@ -220,12 +221,8 @@ def _validate_uuid4(uuid):
 @login_required
 def ctrl_apps(request):
     app_list = []
-    try:
-        user = User.objects.get(auth_user__username=request.user.username)
-        for app in App.objects.filter(user=user):
-            app_list.append(app)
-    except ObjectDoesNotExist:
-        pass
+    for app in App.objects.filter(user=request.user):
+        app_list.append(app)
     return render(request, 'server/ctrl_apps.html', {'app_list': app_list})
 
 
@@ -235,14 +232,13 @@ def upload_file(request):
         form = AppForm(request.POST, request.FILES)
         if form.is_valid():
             app = form.save()
-            user = User.objects.get(auth_user=request.user)
-            app.user = user
+            app.user = request.user
             app.save()
             app_to_nodes(app)
             return HttpResponseRedirect('/complete/')
     else:
         form = AppForm(initial={'user': request.user.username})
-    return render(request, 'server/form.html', {'form': form})
+    return render(request, 'server/form.html')
 
 
 # appオブジェクトを受取りnodeオブジェクト群を生成
