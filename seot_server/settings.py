@@ -138,7 +138,7 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
 )
 
-APPEND_SLASH = False
+APPEND_SLASH = True
 
 BROKER_URL = 'amqp://localhost'
 CELERY_RESULT_BACKEND = 'rpc://'
