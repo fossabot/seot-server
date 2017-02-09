@@ -15,7 +15,12 @@ from rest_framework.renderers import JSONRenderer
 
 import yaml
 from .forms import AppForm
-from .models import Agent, App, AppStatus, Job, JobStatus, Node, NodeType
+from .models.agent import Agent
+from .models.app import App
+from .models.job import Job
+from .models.node import Node
+from .models.nodetype import NodeType
+from .models.status import AppStatus, JobStatus
 from .serializer import NodeSerializer
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
@@ -238,7 +243,7 @@ def upload_file(request):
             return HttpResponseRedirect('/complete/')
     else:
         form = AppForm(initial={'user': request.user.username})
-    return render(request, 'server/form.html')
+    return render(request, 'server/form.html', {'form': form})
 
 
 # appオブジェクトを受取りnodeオブジェクト群を生成

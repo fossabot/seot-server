@@ -4,7 +4,8 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from rest_framework import serializers
 
-from .models import Node, NodeType
+from .models.node import Node
+from .models.nodetype import NodeType
 
 logger = logging.getLogger(__name__)
 
