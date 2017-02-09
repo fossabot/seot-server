@@ -59,7 +59,9 @@ def heartbeat_response(request):
         user = User.objects.get(name=data['user_name'])
         agent, created = Agent.objects.get_or_create(
                 id=data['agent_id'],
-                user_id=user.id,)
+                user_id=user.id,
+                latitude=data['latitude'],
+                longitude=data['longitude'])
         nodetypes_create_and_add(agent, data['nodes'])
         job = Job.objects.get(allocated_agent_id=agent.id)
         if job.application.status == AppStatus.launching.value and\
