@@ -34,6 +34,15 @@ class JSONResponse(HttpResponse):
         super(JSONResponse, self).__init__(content, **kwargs)
 
 
+def nodetypes_create_and_add(agent, nodetypes_data):
+    agent.available_node_types.clear()
+    for nodetype_data in nodetypes_data:
+        node_type, created = NodeType.objects.get_or_create(
+                name=str(nodetype_data))
+        agent.available_node_types.add(node_type)
+        node_type.save()
+
+
 @csrf_exempt
 @api_view(['POST'])
 @parser_classes((JSONParser, ))
@@ -50,7 +59,10 @@ def heartbeat_response(request):
         user = User.objects.get(name=data['user_name'])
         agent, created = Agent.objects.get_or_create(
                 id=data['agent_id'],
-                user_id=user.id,)
+                user_id=user.id,
+                latitude=data['latitude'],
+                longitude=data['longitude'])
+        nodetypes_create_and_add(agent, data['nodes'])
         job = Job.objects.get(allocated_agent_id=agent.id)
         if job.application.status == AppStatus.launching.value and\
                 job.status == JobStatus.idle.value:
@@ -131,15 +143,15 @@ def job_request_base(request, job_id, request_status):
                 job.application.status = AppStatus.running.value
                 job.application.save()
         # stopリクエストが来て、jobステータスがstop_pendingのとき
-        # jobステータスをstoppedに
+        # jobステータスをidleに
         elif request_status == RequestStatus.stop.value and\
                 job.status == JobStatus.stop_pending.value:
-            job.status = JobStatus.stopped.value
+            job.status = JobStatus.idle.value
             job.save()
-            # appの全jobがstoppedのとき、AppStatusをstoppedに
+            # appの全jobがidleのとき、AppStatusをidleに
             if not job.application.jobs.exclude(
-                    status=JobStatus.stopped.value).exists():
-                job.application.status = AppStatus.stopped.value
+                    status=JobStatus.idle.value).exists():
+                job.application.status = AppStatus.idle.value
                 job.application.save()
 
         response = {

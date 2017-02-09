@@ -11,7 +11,6 @@ class AppStatus(enum.Enum):
     launching = 2
     running = 3
     stopping = 4
-    stopped = 5
 
     @classmethod
     def choices(cls):
@@ -23,7 +22,6 @@ class JobStatus(enum.Enum):
     accept_pending = 2
     running = 3
     stop_pending = 4
-    stopped = 5
 
     @classmethod
     def choices(cls):
@@ -88,7 +86,6 @@ class Agent(models.Model):
 #                              null=True)
     longitude = models.FloatField(default=0.0)
     latitude = models.FloatField(default=0.0)
-    busy = models.BooleanField(default=0)
     created_at = models.DateTimeField(default=timezone.now)
     latest_heartbeat_at = models.DateTimeField(auto_now=True)
     dpp_listen_port = models.IntegerField(default=51423)
@@ -146,12 +143,6 @@ class Node(models.Model):
                             related_name="nodes",
                             blank=True,
                             null=True)
-    application = models.ForeignKey(App,
-                                    models.SET_NULL,
-                                    related_name="nodes",
-                                    blank=True,
-                                    null=True)
-    running = models.BooleanField(default=False)
 
     def type_name(self):
         return self.node_type.name
