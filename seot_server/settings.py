@@ -84,8 +84,12 @@ WSGI_APPLICATION = 'seot_server.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'seot_server',
+        'USER': 'seot_test',
+        'PASSWORD': 'Takuya_20070818',
+        'HOST': '',
+        'PORT': '',
     }
 }
 
@@ -129,6 +133,10 @@ USE_TZ = True
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = '/static/'
+
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)
 
 APPEND_SLASH = False
 

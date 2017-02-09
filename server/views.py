@@ -219,20 +219,13 @@ def _validate_uuid4(uuid):
 @login_required
 def ctrl_apps(request):
     app_list = []
-    app_str_list = []
-    if request.method == 'POST':
+    try:
+        user = User.objects.get(auth_user__username=request.user.username)
+        for app in App.objects.filter(user=user):
+            app_list.append(app)
+    except ObjectDoesNotExist:
         pass
-    else:
-        try:
-            user = User.objects.get(auth_user__username=request.user.username)
-            for app in App.objects.filter(user=user):
-                app_list.append(app)
-        except ObjectDoesNotExist:
-            pass
-    for app in app_list:
-        app_str_list.append(app.name)
-    print(app_str_list)
-    return render(request, 'server/ctrl_apps.html', {'app_list': app_str_list})
+    return render(request, 'server/ctrl_apps.html', {'app_list': app_list})
 
 
 @login_required
@@ -446,3 +439,40 @@ def make_jobs(app, nodes):
 
 def complete(request):
     return render(request, 'server/complete.html')
+
+
+def app_request_base(request, app_id, request_status):
+
+    # uuidがuuid4に準拠しているかどうか
+    if _validate_uuid4(app_id) is None:
+        return JSONResponse({}, status=400)
+
+    try:
+        app = App.objects.get(id=app_id)
+        if request_status == RequestStatus.accept.value:
+            app.status = AppStatus.launching.value
+        elif request_status == RequestStatus.stop.value:
+            app.status = AppStatus.stopping.value
+        app.save()
+        response = {
+            "app_id": str(app.id),
+            "app_status": str(app.status)
+        }
+        print(response)
+        return JSONResponse(response, status=200)
+    except Job.DoesNotExist:
+        return JSONResponse({}, status=400)
+
+
+@csrf_exempt
+@parser_classes((JSONParser, ))
+def app_launch_request(request, app_id):
+    app_request_base(request, app_id, RequestStatus.accept.value)
+    return HttpResponseRedirect('/ctrl_apps/')
+
+
+@csrf_exempt
+@parser_classes((JSONParser, ))
+def app_stop_request(request, app_id):
+    app_request_base(request, app_id, RequestStatus.stop.value)
+    return HttpResponseRedirect('/ctrl_apps/')

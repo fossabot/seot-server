@@ -3,10 +3,33 @@
 {% block title %}アプリ起動/停止管理画面{% endblock title %}
 {% block content %}
     {% csrf_token %}
+    {% load static %}
+    <p>hello {{ request.user.username }}</p>
+    {% for app in app_list %}
     <p>
-    hello {{ request.user.username }}
+        {{ app.name  }}
+        {% if app.status == 1 %}
+            <a href="{% url 'app_launch' app.id%}">
+                <button>launch</button>
+            </a>
+            idle
+        {% elif app.status == 2 %}
+            <img src="{% static 'loading.gif'  %}">
+            launching
+        {% elif app.status == 3 %}
+            <a href="{% url 'app_stop' app.id  %}">
+                <button>stop</button>
+            </a>
+            runnning
+        {% elif app.status == 4 %}
+            <img src="{% static 'loading.gif'  %}">
+            stopping
+        {% elif app.status == 5 %}
+            stopped
+        {% else %}
+            error: invalid status
+        {% endif %}
     </p>
-    {% for o in app_list %}
-    <p>{{ o }}</p>
     {% endfor %}
+    <input type="button" value="reload" onclick="location.reload();">
 {% endblock content %}
