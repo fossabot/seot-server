@@ -36,5 +36,7 @@
         </tr>
     {% endfor %}
     </table>
-    <input type="button" value="reload" onclick="location.reload();">
+    <script>
+        setTimeout(function(){location.reload()}, 5000);
+    </script>
 {% endblock content %}
