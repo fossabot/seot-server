@@ -68,7 +68,8 @@ def heartbeat_response(request):
                 id=data['agent_id'],
                 user_id=user.id,
                 latitude=data['latitude'],
-                longitude=data['longitude'])
+                longitude=data['longitude'],
+                ip_addr=data['ip_addr'])
         nodetypes_create_and_add(agent, data['nodes'])
         job = Job.objects.get(allocated_agent_id=agent.id)
         if job.application.status == AppStatus.launching.value and\
@@ -229,6 +230,11 @@ def ctrl_apps(request):
     for app in App.objects.filter(user=request.user):
         app_list.append(app)
     return render(request, 'server/ctrl_apps.html', {'app_list': app_list})
+
+
+@login_required
+def toppage(request):
+    return render(request, 'server/top.html')
 
 
 @login_required
