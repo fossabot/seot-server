@@ -143,6 +143,12 @@ class Node(models.Model):
                             related_name="nodes",
                             blank=True,
                             null=True)
+    application = models.ForeignKey(
+            App,
+            models.SET_NULL,
+            related_name="nodes",
+            blank=True,
+            null=True)
 
     def type_name(self):
         return self.node_type.name
