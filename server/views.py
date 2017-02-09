@@ -154,6 +154,7 @@ def job_request_base(request, job_id, request_status):
                     status=JobStatus.idle.value).exists():
                 job.application.status = AppStatus.idle.value
                 job.application.save()
+                delete_jobs(job.application)
 
         response = {
             "job_id": str(job.id),
@@ -485,3 +486,8 @@ def app_launch_request(request, app_id):
 def app_stop_request(request, app_id):
     app_request_base(request, app_id, RequestStatus.stop.value)
     return HttpResponseRedirect('/ctrl_apps/')
+
+
+def delete_jobs(app):
+    for j in app.jobs.all():
+        j.delete()
