@@ -237,9 +237,7 @@ def upload_file(request):
             user = User.objects.get(auth_user=request.user)
             app.user = user
             app.save()
-            nodes = app_to_nodes(app)
-            if nodes is not None:
-                make_jobs(app, nodes)
+            app_to_nodes(app)
             return HttpResponseRedirect('/complete/')
     else:
         form = AppForm(initial={'user': request.user.username})
@@ -252,11 +250,11 @@ def app_to_nodes(app):
     define_file.open(mode='rb')
     nodes_data = yaml.load(define_file)
     define_file.close()
-    return nodes_data_to_obj(nodes_data)
+    return nodes_data_to_obj(app, nodes_data)
 
 
 # nodeオブジェクトデータのリストからnodeオブジェクト生成
-def nodes_data_to_obj(nodes_data):
+def nodes_data_to_obj(app, nodes_data):
     exist_nodes = []
     while True:
         node_gen = [n for n in nodes_data if 'to' not in n or
@@ -264,6 +262,7 @@ def nodes_data_to_obj(nodes_data):
         for node_data in node_gen:
             node = serialize_node(node_data)
             if node is not None:
+                app.nodes.add(node)
                 exist_nodes.append(node)
                 if 'to' in node_data:
                     [node.next_nodes.add(n)
@@ -305,9 +304,8 @@ def is_source(node):
 
 # nodeをjob, appにadd
 # addした後next_nodesを更新
-def add_node(node, job, app, next_nodes):
+def add_node(node, job, next_nodes):
     job.nodes.add(node)
-    app.nodes.add(node)
     for next_node in node.next_nodes.all():
         # next_nodes内に重複要素が出ないよう確認、
         # また、next_nodesが既にjobに割り当てられていないか確認してからappend
@@ -401,18 +399,24 @@ def create_new_job(name, next_nodes, asigned_agents):
 
 
 # appからjob群を生成
-def make_jobs(app, nodes):
+def make_jobs(app):
     index = 0
     jobs = []
     already_asigned_agents = []
-    next_nodes = [n for n in nodes if is_source(n)]
+    nodes = app.nodes.all()
+    nodes_list = []
+    for n in nodes:
+        nodes_list.append(n)
+    if not nodes_list:
+        return None
+    next_nodes = [n for n in nodes_list if is_source(n)]
     job, node, agent = create_new_job(
             str(app.id) + "_" + str(index), next_nodes, already_asigned_agents)
     index += 1
     while True:
-        add_node(node, job, app, next_nodes)
-        nodes.remove(node)
-        if len(nodes) == 0:
+        add_node(node, job, next_nodes)
+        nodes_list.remove(node)
+        if len(nodes_list) == 0:
             app.jobs.add(job)
             job.save()
             jobs.append(job)
@@ -458,7 +462,6 @@ def app_request_base(request, app_id, request_status):
             "app_id": str(app.id),
             "app_status": str(app.status)
         }
-        print(response)
         return JSONResponse(response, status=200)
     except Job.DoesNotExist:
         return JSONResponse({}, status=400)
@@ -467,8 +470,14 @@ def app_request_base(request, app_id, request_status):
 @csrf_exempt
 @parser_classes((JSONParser, ))
 def app_launch_request(request, app_id):
-    app_request_base(request, app_id, RequestStatus.accept.value)
-    return HttpResponseRedirect('/ctrl_apps/')
+    try:
+        app = App.objects.get(id=app_id)
+        if make_jobs(app):
+            app_request_base(request, app_id, RequestStatus.accept.value)
+    except ObjectDoesNotExist:
+        print("app DoesNotExist")
+    finally:
+        return HttpResponseRedirect('/ctrl_apps/')
 
 
 @csrf_exempt
