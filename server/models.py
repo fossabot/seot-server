@@ -86,7 +86,6 @@ class Agent(models.Model):
 #                              null=True)
     longitude = models.FloatField(default=0.0)
     latitude = models.FloatField(default=0.0)
-    busy = models.BooleanField(default=0)
     created_at = models.DateTimeField(default=timezone.now)
     latest_heartbeat_at = models.DateTimeField(auto_now=True)
     dpp_listen_port = models.IntegerField(default=51423)
