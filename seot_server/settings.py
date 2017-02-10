@@ -132,7 +132,8 @@ STATIC_URL = '/static/'
 
 APPEND_SLASH = False
 
-BROKER_URL = 'amqp://localhost'
+BROKER_URL = os.getenv('RABBITMQ_URL') or 'amqp://localhost'
+
 CELERY_RESULT_BACKEND = 'rpc://'
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'

@@ -10,11 +10,26 @@
 
 ```
 $ pip install -r requirements.txt
+$ brew install rabbitmq
+$ brew services start rabbitmq
 $ python manage.py migrate
 ```
 
 ## Run Server
 
 ```
+$ celery -A seot_server beat
 $ python manage.py runserver
+```
+
+## Deploying to Dokku
+
+```
+$ sudo dokku plugin:install https://github.com/dokku/dokku-rabbitmq.git rabbitmq
+$ sudo dokku plugin:install https://github.com/dokku/dokku-mysql.git mysql
+$ dokku apps:create seot
+$ dokku rabbitmq:create seot
+$ dokku mysql:create seot
+$ dokku rabbitmq:link seot
+$ dokku mysql:link seot
 ```
