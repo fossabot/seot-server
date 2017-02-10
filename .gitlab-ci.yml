@@ -15,9 +15,14 @@ stages:
 check_style:
   stage: test
   script:
-    - pip install -U pip setuptools
     - pip install -r requirements.txt
     - flake8
+
+check_migrations:
+  stage: test
+  script:
+    - pip install -r requirements.txt
+    - python manage.py makemigrations --check
 
 deploy_to_dokku:
   stage: deploy
