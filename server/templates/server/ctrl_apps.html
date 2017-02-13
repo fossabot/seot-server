@@ -1,0 +1,42 @@
+{% extends "server/base.html" %}
+
+{% block title %}アプリ起動/停止管理画面{% endblock title %}
+{% block content %}
+    {% csrf_token %}
+    {% load static %}
+    <p>hello {{ request.user.username }}</p>
+    <table>
+    {% for app in app_list %}
+        <tr>
+            <td>{{ app.name  }}</td>
+            {% if app.status == 1 %}
+                <td>
+                    <a href="{% url 'app_launch' app.id%}">
+                        <button>launch</button>
+                    </a>
+                </td>
+                <td>idle</td>
+            {% elif app.status == 2 %}
+                <td><img src="{% static 'files/loading.gif'  %}"></td>
+                <td>launching</td>
+            {% elif app.status == 3 %}
+                <td>
+                    <a href="{% url 'app_stop' app.id  %}">
+                        <button>stop</button>
+                    </a>
+                </td>
+                <td>runnning</td>
+            {% elif app.status == 4 %}
+                <td><img src="{% static 'files/loading.gif'  %}"></td>
+                <td>stopping</td>
+            {% else %}
+                <td></td>
+                <td>error: invalid status</td>
+            {% endif %}
+        </tr>
+    {% endfor %}
+    </table>
+    <script>
+        setTimeout(function(){location.reload()}, 5000);
+    </script>
+{% endblock content %}

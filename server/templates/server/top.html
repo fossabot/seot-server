@@ -1,0 +1,8 @@
+{% extends "server/base.html" %}
+
+{% block title %}SeoTトップページ{% endblock title %}
+{% block content %}
+<p><a href="{% url 'upload_file' %}">ファイルアップロード</a></p>
+<p><a href="{% url 'ctrl_apps' %}">アプリ管理画面</a></p>
+<p><a href="{% url 'admin:index' %}">管理者用画面</a></p>
+{% endblock content %}

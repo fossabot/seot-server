@@ -4,6 +4,9 @@ import os
 import re
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -13,7 +16,12 @@ from rest_framework.renderers import JSONRenderer
 
 import yaml
 from .forms import AppForm
-from .models import Agent, AppStatus, Job, JobStatus, Node, NodeType, User
+from .models.agent import Agent
+from .models.app import App
+from .models.job import Job
+from .models.node import Node
+from .models.nodetype import NodeType
+from .models.status import AppStatus, JobStatus
 from .serializer import NodeSerializer
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
@@ -47,21 +55,17 @@ def nodetypes_create_and_add(agent, nodetypes_data):
 @api_view(['POST'])
 @parser_classes((JSONParser, ))
 def heartbeat_response(request):
-    agent_ip_addr = request.META.get('REMOTE_ADDR')
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        agent_ip_addr = x_forwarded_for.split(',')[0]
-
     data = JSONParser().parse(request)
-    data['ip_addr'] = agent_ip_addr
 
     try:
-        user = User.objects.get(name=data['user_name'])
+        user = User.objects.get(username=data['user_name'])
         agent, created = Agent.objects.get_or_create(
                 id=data['agent_id'],
                 user_id=user.id,
                 latitude=data['latitude'],
-                longitude=data['longitude'])
+                longitude=data['longitude'],
+                ip_addr=data['facts']['ip'],
+                hostname=data['facts']['hostname'])
         nodetypes_create_and_add(agent, data['nodes'])
         job = Job.objects.get(allocated_agent_id=agent.id)
         if job.application.status == AppStatus.launching.value and\
@@ -153,6 +157,7 @@ def job_request_base(request, job_id, request_status):
                     status=JobStatus.idle.value).exists():
                 job.application.status = AppStatus.idle.value
                 job.application.save()
+                delete_jobs(job.application)
 
         response = {
             "job_id": str(job.id),
@@ -216,17 +221,27 @@ def _validate_uuid4(uuid):
 
 
 @login_required
+def ctrl_apps(request):
+    app_list = []
+    for app in App.objects.filter(user=request.user):
+        app_list.append(app)
+    return render(request, 'server/ctrl_apps.html', {'app_list': app_list})
+
+
+@login_required
+def toppage(request):
+    return render(request, 'server/top.html')
+
+
+@login_required
 def upload_file(request):
     if request.method == 'POST':
         form = AppForm(request.POST, request.FILES)
         if form.is_valid():
             app = form.save()
-            user = User.objects.get(auth_user=request.user)
-            app.user = user
+            app.user = request.user
             app.save()
-            nodes = app_to_nodes(app)
-            if nodes is not None:
-                make_jobs(app, nodes)
+            app_to_nodes(app)
             return HttpResponseRedirect('/complete/')
     else:
         form = AppForm(initial={'user': request.user.username})
@@ -239,11 +254,11 @@ def app_to_nodes(app):
     define_file.open(mode='rb')
     nodes_data = yaml.load(define_file)
     define_file.close()
-    return nodes_data_to_obj(nodes_data)
+    return nodes_data_to_obj(app, nodes_data)
 
 
 # nodeオブジェクトデータのリストからnodeオブジェクト生成
-def nodes_data_to_obj(nodes_data):
+def nodes_data_to_obj(app, nodes_data):
     exist_nodes = []
     while True:
         node_gen = [n for n in nodes_data if 'to' not in n or
@@ -251,6 +266,7 @@ def nodes_data_to_obj(nodes_data):
         for node_data in node_gen:
             node = serialize_node(node_data)
             if node is not None:
+                app.nodes.add(node)
                 exist_nodes.append(node)
                 if 'to' in node_data:
                     [node.next_nodes.add(n)
@@ -292,9 +308,8 @@ def is_source(node):
 
 # nodeをjob, appにadd
 # addした後next_nodesを更新
-def add_node(node, job, app, next_nodes):
+def add_node(node, job, next_nodes):
     job.nodes.add(node)
-    app.nodes.add(node)
     for next_node in node.next_nodes.all():
         # next_nodes内に重複要素が出ないよう確認、
         # また、next_nodesが既にjobに割り当てられていないか確認してからappend
@@ -388,18 +403,24 @@ def create_new_job(name, next_nodes, asigned_agents):
 
 
 # appからjob群を生成
-def make_jobs(app, nodes):
+def make_jobs(app):
     index = 0
     jobs = []
     already_asigned_agents = []
-    next_nodes = [n for n in nodes if is_source(n)]
+    nodes = app.nodes.all()
+    nodes_list = []
+    for n in nodes:
+        nodes_list.append(n)
+    if not nodes_list:
+        return None
+    next_nodes = [n for n in nodes_list if is_source(n)]
     job, node, agent = create_new_job(
             str(app.id) + "_" + str(index), next_nodes, already_asigned_agents)
     index += 1
     while True:
-        add_node(node, job, app, next_nodes)
-        nodes.remove(node)
-        if len(nodes) == 0:
+        add_node(node, job, next_nodes)
+        nodes_list.remove(node)
+        if len(nodes_list) == 0:
             app.jobs.add(job)
             job.save()
             jobs.append(job)
@@ -426,3 +447,50 @@ def make_jobs(app, nodes):
 
 def complete(request):
     return render(request, 'server/complete.html')
+
+
+def app_request_base(request, app_id, request_status):
+
+    # uuidがuuid4に準拠しているかどうか
+    if _validate_uuid4(app_id) is None:
+        return JSONResponse({}, status=400)
+
+    try:
+        app = App.objects.get(id=app_id)
+        if request_status == RequestStatus.accept.value:
+            app.status = AppStatus.launching.value
+        elif request_status == RequestStatus.stop.value:
+            app.status = AppStatus.stopping.value
+        app.save()
+        response = {
+            "app_id": str(app.id),
+            "app_status": str(app.status)
+        }
+        return JSONResponse(response, status=200)
+    except Job.DoesNotExist:
+        return JSONResponse({}, status=400)
+
+
+@csrf_exempt
+@parser_classes((JSONParser, ))
+def app_launch_request(request, app_id):
+    try:
+        app = App.objects.get(id=app_id)
+        if make_jobs(app):
+            app_request_base(request, app_id, RequestStatus.accept.value)
+    except ObjectDoesNotExist:
+        print("app DoesNotExist")
+    finally:
+        return HttpResponseRedirect(reverse('ctrl_apps'))
+
+
+@csrf_exempt
+@parser_classes((JSONParser, ))
+def app_stop_request(request, app_id):
+    app_request_base(request, app_id, RequestStatus.stop.value)
+    return HttpResponseRedirect(reverse('ctrl_apps'))
+
+
+def delete_jobs(app):
+    for j in app.jobs.all():
+        j.delete()

@@ -1,6 +1,10 @@
 from django.contrib import admin
 
-from .models import Agent, App, Job, Node, NodeType, User
+from .models.agent import Agent
+from .models.app import App
+from .models.job import Job
+from .models.node import Node
+from .models.nodetype import NodeType
 
 
 @admin.register(App)
@@ -11,11 +15,6 @@ class AppAdmin(admin.ModelAdmin):
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):
     list_display = ('id', 'user_id', 'ip_addr', 'latest_heartbeat_at')
-
-
-@admin.register(User)
-class UserAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name')
 
 
 @admin.register(NodeType)
@@ -38,8 +37,3 @@ class NodeAdmin(admin.ModelAdmin):
             return ','.join([node.name for node in obj.next_nodes.all()])
         else:
             return "this node has no next nodes."
-
-
-# @admin.register(AppDefineFile)
-# class AppDefineFileAdmin(admin.ModelAdmin):
-#     list_display = ('name', 'upload_time', 'file_link')
