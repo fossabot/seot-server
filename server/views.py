@@ -9,6 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import JSONParser
@@ -67,6 +68,7 @@ def heartbeat_response(request):
                 ip_addr=data['facts']['ip'],
                 hostname=data['facts']['hostname'])
         nodetypes_create_and_add(agent, data['nodes'])
+        agent.latest_heartbeat_at = timezone.now()
         job = Job.objects.get(allocated_agent_id=agent.id)
         if job.application.status == AppStatus.launching.value and\
                 job.status == JobStatus.idle.value:
