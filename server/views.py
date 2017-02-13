@@ -70,6 +70,7 @@ def heartbeat_response(request):
         nodetypes_create_and_add(agent, data['nodes'])
         agent.latest_heartbeat_at = timezone.now()
         job = Job.objects.get(allocated_agent_id=agent.id)
+        agent.save()
         if job.application.status == AppStatus.launching.value and\
                 job.status == JobStatus.idle.value:
             # AppがlaunchingでJobがidleのとき
