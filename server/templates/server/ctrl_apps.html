@@ -17,7 +17,7 @@
                 </td>
                 <td>idle</td>
             {% elif app.status == 2 %}
-                <td><img src="{% static 'loading.gif'  %}"></td>
+                <td><img src="{% static 'files/loading.gif'  %}"></td>
                 <td>launching</td>
             {% elif app.status == 3 %}
                 <td>
@@ -27,7 +27,7 @@
                 </td>
                 <td>runnning</td>
             {% elif app.status == 4 %}
-                <td><img src="{% static 'loading.gif'  %}"></td>
+                <td><img src="{% static 'files/loading.gif'  %}"></td>
                 <td>stopping</td>
             {% else %}
                 <td></td>

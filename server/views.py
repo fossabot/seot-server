@@ -6,6 +6,7 @@ import re
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -54,13 +55,7 @@ def nodetypes_create_and_add(agent, nodetypes_data):
 @api_view(['POST'])
 @parser_classes((JSONParser, ))
 def heartbeat_response(request):
-    agent_ip_addr = request.META.get('REMOTE_ADDR')
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        agent_ip_addr = x_forwarded_for.split(',')[0]
-
     data = JSONParser().parse(request)
-    data['ip_addr'] = agent_ip_addr
 
     try:
         user = User.objects.get(username=data['user_name'])
@@ -69,7 +64,8 @@ def heartbeat_response(request):
                 user_id=user.id,
                 latitude=data['latitude'],
                 longitude=data['longitude'],
-                ip_addr=data['ip_addr'])
+                ip_addr=data['facts']['ip'],
+                hostname=data['facts']['hostname'])
         nodetypes_create_and_add(agent, data['nodes'])
         job = Job.objects.get(allocated_agent_id=agent.id)
         if job.application.status == AppStatus.launching.value and\
@@ -485,14 +481,14 @@ def app_launch_request(request, app_id):
     except ObjectDoesNotExist:
         print("app DoesNotExist")
     finally:
-        return HttpResponseRedirect('/ctrl_apps/')
+        return HttpResponseRedirect(reverse('ctrl_apps'))
 
 
 @csrf_exempt
 @parser_classes((JSONParser, ))
 def app_stop_request(request, app_id):
     app_request_base(request, app_id, RequestStatus.stop.value)
-    return HttpResponseRedirect('/ctrl_apps/')
+    return HttpResponseRedirect(reverse('ctrl_apps'))
 
 
 def delete_jobs(app):

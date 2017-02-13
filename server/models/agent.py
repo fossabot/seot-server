@@ -19,6 +19,7 @@ class Agent(models.Model):
     available_node_types = models.ManyToManyField(NodeType,
                                                   related_name="agents",)
     ip_addr = models.CharField(max_length=64, default='127.0.0.1')
+    hostname = models.CharField(max_length=128, default='agent')
 
     def __str__(self):
         return '%s' % (self.id)
