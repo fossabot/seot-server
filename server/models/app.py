@@ -19,7 +19,7 @@ class App(models.Model):
         verbose_name='App Status'
     )
 
-    def file_link(self):
+    def download_link_tag(self):
         if self.yaml_file:
             return format_html(
                     '<a href="{}">download file<>',
