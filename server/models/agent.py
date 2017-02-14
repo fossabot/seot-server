@@ -14,7 +14,7 @@ class Agent(models.Model):
     longitude = models.FloatField(default=0.0)
     latitude = models.FloatField(default=0.0)
     created_at = models.DateTimeField(default=timezone.now)
-    latest_heartbeat_at = models.DateTimeField(default=timezone.now)
+    latest_heartbeat_at = models.DateTimeField(auto_now=True)
     dpp_listen_port = models.IntegerField(default=51423)
     available_node_types = models.ManyToManyField(NodeType,
                                                   related_name="agents",)

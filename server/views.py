@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
+from django.db import transaction
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.utils import timezone
@@ -49,9 +50,9 @@ def nodetypes_create_and_add(agent, nodetypes_data):
         node_type, created = NodeType.objects.get_or_create(
                 name=str(nodetype_data))
         agent.available_node_types.add(node_type)
-        node_type.save()
 
 
+@transaction.atomic
 @csrf_exempt
 @api_view(['POST'])
 @parser_classes((JSONParser, ))
@@ -69,8 +70,8 @@ def heartbeat_response(request):
                 hostname=data['facts']['hostname'])
         nodetypes_create_and_add(agent, data['nodes'])
         agent.latest_heartbeat_at = timezone.now()
-        job = Job.objects.get(allocated_agent_id=agent.id)
         agent.save()
+        job = Job.objects.get(allocated_agent_id=agent.id)
         if job.application.status == AppStatus.launching.value and\
                 job.status == JobStatus.idle.value:
             # AppがlaunchingでJobがidleのとき
@@ -172,6 +173,7 @@ def job_request_base(request, job_id, request_status):
         return JSONResponse({}, status=400)
 
 
+@transaction.atomic
 @csrf_exempt
 @parser_classes((JSONParser, ))
 def job_request(request, job_id):
@@ -189,7 +191,6 @@ def job_request(request, job_id):
                 "type": n.type_name(),
                 "to": n.to()
             }
-            print(n.args)
             if n.args:
                 node["args"] = json.loads(n.args)
             nodes.append(node)
@@ -199,18 +200,19 @@ def job_request(request, job_id):
             "application_id": str(job.application_id),
             "nodes": nodes
         }
-        print(response)
         return JSONResponse(response, status=200)
     except Job.DoesNotExist:
         return JSONResponse({}, status=400)
 
 
+@transaction.atomic
 @csrf_exempt
 @parser_classes((JSONParser, ))
 def job_accept_request(request, job_id):
     return job_request_base(request, job_id, RequestStatus.accept.value)
 
 
+@transaction.atomic
 @csrf_exempt
 @parser_classes((JSONParser, ))
 def job_stop_request(request, job_id):
@@ -223,6 +225,7 @@ def _validate_uuid4(uuid):
 -[89ab][0-9a-f]{3}-[0-9a-f]{12}", uuid)
 
 
+@transaction.atomic
 @login_required
 def ctrl_apps(request):
     app_list = []
@@ -231,11 +234,13 @@ def ctrl_apps(request):
     return render(request, 'server/ctrl_apps.html', {'app_list': app_list})
 
 
+@transaction.atomic
 @login_required
 def toppage(request):
     return render(request, 'server/top.html')
 
 
+@transaction.atomic
 @login_required
 def upload_file(request):
     if request.method == 'POST':
@@ -378,7 +383,6 @@ def create_zmq_pare(app):
                 name=node.name + "_to_" + n.name + "_source")
             node.next_nodes.remove(n)
             node.next_nodes.add(zmq_sink)
-            zmq_sink.next_nodes.add(zmq_source)
             zmq_source.next_nodes.add(n)
 
             node.job.nodes.add(zmq_sink)
@@ -386,6 +390,16 @@ def create_zmq_pare(app):
 
             app.nodes.add(zmq_sink)
             app.nodes.add(zmq_source)
+
+            addr = str(n.job.allocated_agent.ip_addr)
+            port = str(n.job.allocated_agent.dpp_listen_port)
+            target_ip_addr = {}
+            target_ip_addr['url'] = 'tcp://'\
+                                    + addr\
+                                    + ':'\
+                                    + port
+            zmq_sink.args = json.dumps(target_ip_addr)
+            zmq_sink.save()
 
 
 # 新しいjobをnameを指定して生成
@@ -441,7 +455,6 @@ def make_jobs(app):
                 next_nodes, already_asigned_agents)
             index += 1
             if job is None:
-                print(jobs)
                 print("couldn't create job")
                 return None
     create_zmq_pare(app)
@@ -474,6 +487,7 @@ def app_request_base(request, app_id, request_status):
         return JSONResponse({}, status=400)
 
 
+@transaction.atomic
 @csrf_exempt
 @parser_classes((JSONParser, ))
 def app_launch_request(request, app_id):
@@ -487,6 +501,7 @@ def app_launch_request(request, app_id):
         return HttpResponseRedirect(reverse('ctrl_apps'))
 
 
+@transaction.atomic
 @csrf_exempt
 @parser_classes((JSONParser, ))
 def app_stop_request(request, app_id):
