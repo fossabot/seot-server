@@ -1,6 +1,6 @@
 from django.conf.urls import url
-from server import views
+from server.views.api.heartbeat_view import HeartbeatView
 
 urlpatterns = [
-    url(r'^heartbeat$', views.heartbeat_response),
+    url(r'^heartbeat$', HeartbeatView.post),
 ]

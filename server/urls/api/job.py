@@ -1,11 +1,11 @@
 from django.conf.urls import url
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
-from server import views
+from server.views.api.job_view import JobView
 
 urlpatterns = [
-    url(r'^job/(?P<job_id>.+)/stop', views.job_stop_request),
-    url(r'^job/(?P<job_id>.+)/accept', views.job_accept_request),
-    url(r'^job/(?P<job_id>.+)', views.job_request),
+    url(r'^job/(?P<job_id>.+)/stop', JobView.stop),
+    url(r'^job/(?P<job_id>.+)/accept', JobView.accept),
+    url(r'^job/(?P<job_id>.+)', JobView.get),
 ]
 
 urlpatterns += staticfiles_urlpatterns()
