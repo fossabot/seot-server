@@ -36,9 +36,11 @@ class HeartbeatView:
             agent.active = True
             agent.save()
 
-            job = Job.objects.get(allocated_agent_id=agent.id)
-            if job.application.status == AppStatus.launching.value and\
-                    job.status == JobStatus.idle.value:
+            job = Job.objects.filter(
+                    allocated_agent_id=agent.id,
+                    application__status=AppStatus.launching.value,
+                    status=JobStatus.idle.value).first()
+            if job:
                 # AppがlaunchingでJobがidleのとき
                 response = {
                     "run": job.id,
@@ -47,8 +49,11 @@ class HeartbeatView:
                 job.status = JobStatus.accept_pending.value
                 job.save()
                 return JSONView.response(response, status=200)
-            elif job.application.status == AppStatus.stopping.value and\
-                    job.status == JobStatus.running.value:
+            job = Job.objects.filter(
+                    allocated_agent_id=agent.id,
+                    application__status=AppStatus.stopping.value,
+                    status=JobStatus.runninng.value).first()
+            if job:
                 # AppがstoppingでJobがrunnningのとき
                 response = {
                     "run": None,
@@ -57,14 +62,7 @@ class HeartbeatView:
                 job.status = JobStatus.stop_pending.value
                 job.save()
                 return JSONView.response(response, status=200)
-            else:
-                response = {
-                    "run": None,
-                    "kill": None,
-                }
-                return JSONView.response(response, status=200)
-        except Job.DoesNotExist:
-            # ジョブがない場合のレスポンス
+            # 起動/停止するJobがない時、およびJobが全くないとき
             response = {
                 "error": "Job does not exist.",
                 "run": None,
