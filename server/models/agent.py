@@ -22,6 +22,7 @@ class Agent(models.Model):
             related_name="agents",)
     ip_addr = models.CharField(max_length=64, default='127.0.0.1')
     hostname = models.CharField(max_length=128, default='agent')
+    active = models.BooleanField(default=True)
 
     # すでに持っているNodeTypeを破棄し、新しいNodeTypeに変更する
     def update_nodetypes(self, new_nodetype_names):
