@@ -21,5 +21,16 @@ class Agent(models.Model):
     ip_addr = models.CharField(max_length=64, default='127.0.0.1')
     hostname = models.CharField(max_length=128, default='agent')
 
+    # すでに持っているNodeTypeを破棄し、新しいNodeTypeに変更する
+    def update_nodetypes(self, new_nodetype_names):
+        self.available_node_types.clear()
+        for name in new_nodetype_names:
+            nt, created = NodeType.objects.get_or_create(
+                name=str(name))
+            self.available_node_types.add(nt)
+
+    def update_latest_heartbeat_at(self, time):
+        self.latest_heartbeat_at = time
+
     def __str__(self):
         return '%s' % (self.id)
