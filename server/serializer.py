@@ -1,9 +1,6 @@
 import logging
-
 from django.core.exceptions import ObjectDoesNotExist
-
 from rest_framework import serializers
-
 from .models.node import Node
 from .models.nodetype import NodeType
 

@@ -3,10 +3,12 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 from django.utils.html import format_html
+from .app_schedule_logics import AppScheduleLogics
+from .app_setup_logics import AppSetupLogics
 from .app_status import AppStatus
 
 
-class App(models.Model):
+class App(models.Model, AppSetupLogics, AppScheduleLogics):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=128, blank=True)
     user = models.ForeignKey(User, related_name="apps", blank=True, null=True)

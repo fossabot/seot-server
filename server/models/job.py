@@ -1,23 +1,24 @@
 import uuid
 from django.db import models
-from .agent import Agent
-from .app import App
+from .job_logics import JobLogics
 from .job_status import JobStatus
 
 
-class Job(models.Model):
+class Job(models.Model, JobLogics):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=128, default='')
-    application = models.ForeignKey(App,
-                                    models.SET_NULL,
-                                    related_name='jobs',
-                                    blank=True,
-                                    null=True)
-    allocated_agent = models.ForeignKey(Agent,
-                                        models.SET_NULL,
-                                        related_name='allocated_jobs',
-                                        blank=True,
-                                        null=True)
+    application = models.ForeignKey(
+            'App',
+            models.SET_NULL,
+            related_name='jobs',
+            blank=True,
+            null=True)
+    allocated_agent = models.ForeignKey(
+            'Agent',
+            models.SET_NULL,
+            related_name='allocated_jobs',
+            blank=True,
+            null=True)
     status = models.IntegerField(
         choices=JobStatus.choices(),
         default=JobStatus.idle.value,
