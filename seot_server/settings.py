@@ -130,6 +130,10 @@ USE_TZ = True
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = '/static/'
 
+STATICFILES_DIRS = (
+   os.path.join(BASE_DIR, 'static'),
+)
+
 APPEND_SLASH = False
 
 BROKER_URL = os.getenv('RABBITMQ_URL') or 'amqp://localhost'

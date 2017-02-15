@@ -5,19 +5,20 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import JSONParser
 
-from .models.agent import Agent
-from .models.job import Job
-from .models.status import AppStatus, JobStatus
-from .views import JSONResponse
+from server.models.agent import Agent
+from server.models.app_status import AppStatus
+from server.models.job import Job
+from server.models.job_status import JobStatus
+from server.views.json_view import JSONView
 
 
 class HeartbeatView:
-
+    @staticmethod
     @transaction.atomic
     @csrf_exempt
     @api_view(['POST'])
     @parser_classes((JSONParser, ))
-    def post(self, request):
+    def post(request):
         data = JSONParser().parse(request)
 
         try:
@@ -44,7 +45,7 @@ class HeartbeatView:
                 }
                 job.status = JobStatus.accept_pending.value
                 job.save()
-                return JSONResponse(response, status=200)
+                return JSONView.response(response, status=200)
             elif job.application.status == AppStatus.stopping.value and\
                     job.status == JobStatus.running.value:
                 # AppがstoppingでJobがrunnningのとき
@@ -54,20 +55,20 @@ class HeartbeatView:
                 }
                 job.status = JobStatus.stop_pending.value
                 job.save()
-                return JSONResponse(response, status=200)
+                return JSONView.response(response, status=200)
             else:
                 response = {
                     "run": None,
                     "kill": None,
                 }
-                return JSONResponse(response, status=200)
+                return JSONView.response(response, status=200)
         except Job.DoesNotExist:
             # ジョブがない場合のレスポンス
             response = {
                 "run": None,
                 "kill": None,
             }
-            return JSONResponse(response, status=200)
+            return JSONView.response(response, status=200)
         except User.DoesNotExist:
             # ユーザが存在しない場合
-            return JSONResponse({}, status=400)
+            return JSONView.response({}, status=400)

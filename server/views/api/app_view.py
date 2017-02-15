@@ -1,8 +1,6 @@
 import enum
 import json
 import os
-import re
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.db import transaction
@@ -11,17 +9,17 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import parser_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
-
 from server.models.agent import Agent
 from server.models.app import App
 from server.models.app_status import AppStatus
 from server.models.job import Job
 from server.models.node import Node
 from server.models.nodetype import NodeType
+from server.models.uuid import UUID4
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
 
-class AppView():
+class AppView:
     @staticmethod
     @transaction.atomic
     @csrf_exempt
@@ -35,7 +33,7 @@ class AppView():
         except ObjectDoesNotExist:
             print("app DoesNotExist")
         finally:
-            return HttpResponseRedirect(reverse('ctrl_apps'))
+            return HttpResponseRedirect(reverse('toppage'))
 
     @staticmethod
     @transaction.atomic
@@ -43,12 +41,12 @@ class AppView():
     @parser_classes((JSONParser, ))
     def stop(request, app_id):
         app_request_base(request, app_id, RequestStatus.stop.value)
-        return HttpResponseRedirect(reverse('ctrl_apps'))
+        return HttpResponseRedirect(reverse('toppage'))
 
 
 def app_request_base(request, app_id, request_status):
     # uuidがuuid4に準拠しているかどうか
-    if _validate_uuid4(app_id) is None:
+    if UUID4.validate(app_id) is None:
         return JSONResponse({}, status=400)
 
     try:
@@ -125,12 +123,6 @@ class JSONResponse(HttpResponse):
         content = JSONRenderer().render(data)
         kwargs['content_type'] = 'application/json'
         super(JSONResponse, self).__init__(content, **kwargs)
-
-
-def _validate_uuid4(uuid):
-    return re.match(
-            "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}\
--[89ab][0-9a-f]{3}-[0-9a-f]{12}", uuid)
 
 
 # nodeが始端ノードであるか判定

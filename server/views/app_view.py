@@ -5,14 +5,14 @@ from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
-import yaml
-from server.models.app import App
 from server.forms import AppForm
+from server.models.app import App
 from server.serializer import NodeSerializer
+import yaml
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
 
-class AppView():
+class AppView:
     @staticmethod
     @transaction.atomic
     @login_required

@@ -9,5 +9,3 @@ urlpatterns = [
     url(r'^upload', AppView.upload, name='upload_file'),
     url(r'^$', AppView.get, name='toppage'),
 ]
-
-urlpatterns += staticfiles_urlpatterns()

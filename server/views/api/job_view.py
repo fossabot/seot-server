@@ -1,32 +1,25 @@
 import json
-import re
-
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import parser_classes
 from rest_framework.parsers import JSONParser
-
-from .models.app_status import AppStatus
-from .models.job import Job
-from .models.job_status import JobStatus
-from .models.node import Node
-from .view import JSONResponse, RequestStatus
+from server.models.app_status import AppStatus
+from server.models.job import Job
+from server.models.job_status import JobStatus
+from server.models.node import Node
+from server.models.request_status import RequestStatus
+from server.models.uuid import UUID4
+from server.views.json_view import JSONResponse
 
 
 class JobView:
-
-    # uuid4に準拠しているかどうかを返す
-    def _validate_uuid4(self, uuid):
-        return re.match(
-                "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}\
-    -[89ab][0-9a-f]{3}-[0-9a-f]{12}", uuid)
-
+    @staticmethod
     @transaction.atomic
     @csrf_exempt
     @parser_classes((JSONParser, ))
-    def get(self, job_id):
+    def get(request, job_id):
 
-        if self._validate_uuid4(job_id) is None:
+        if UUID4.validate(job_id) is None:
             return JSONResponse({}, status=400)
 
         try:
@@ -51,9 +44,9 @@ class JobView:
         except Job.DoesNotExist:
             return JSONResponse({}, status=400)
 
-    def _post(self, request, job_id, request_status):
-
-        if self._validate_uuid4(job_id) is None:
+    @staticmethod
+    def _post(request, job_id, request_status):
+        if UUID4.validate(job_id) is None:
             return JSONResponse({}, status=400)
 
         try:
@@ -112,14 +105,16 @@ class JobView:
         except Job.DoesNotExist:
             return JSONResponse({}, status=400)
 
+    @classmethod
     @transaction.atomic
     @csrf_exempt
     @parser_classes((JSONParser, ))
-    def accept(self, request, job_id):
-        return self._post(request, job_id, RequestStatus.accept.value)
+    def accept(cls, request, job_id):
+        return cls._post(request, job_id, RequestStatus.accept.value)
 
+    @classmethod
     @transaction.atomic
     @csrf_exempt
     @parser_classes((JSONParser, ))
-    def stop(self, request, job_id):
-        return self._post(request, job_id, RequestStatus.stop.value)
+    def stop(cls, request, job_id):
+        return cls._post(request, job_id, RequestStatus.stop.value)
