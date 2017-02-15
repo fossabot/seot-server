@@ -1,4 +1,5 @@
 import json
+import re
 import uuid
 from django.contrib.auth.models import User
 from django.db import models
@@ -8,6 +9,7 @@ from server.serializer import NodeSerializer
 import yaml
 from .app_scheduler import AppScheduler
 from .app_status import AppStatus
+from .node import Node
 
 
 class App(models.Model, AppScheduler):
@@ -34,6 +36,29 @@ class App(models.Model, AppScheduler):
     # 登録されているジョブを全てクリア（削除）する
     def clear_jobs(self):
         self.jobs.all().delete()
+
+    # 登録されているジョブのうち、自動生成されたもの（zmq_sink/_source）
+    # をすべてクリアする
+    def clear_nodes(self):
+        for sk in self.nodes.filter(
+                automatically_added=True,
+                node_type__name__exact='ZMQSink'):
+            src_name = re.sub(r'_sink$', '_source', sk.name)
+            try:
+                src = self.nodes.get(
+                        automatically_added=True,
+                        node_type__name__exact='ZMQSource',
+                        name=src_name)
+                before_n = sk.before_nodes.get()
+                next_n = src.next_nodes.get()
+                before_n.next_nodes.add(next_n)
+                before_n.save()
+                sk.delete()
+                src.delete()
+            except Node.DoesNotExist:
+                pass
+            except Node.MultipleObjectsReturned:
+                pass
 
     def __str__(self):
         return '%s' % (self.name)
