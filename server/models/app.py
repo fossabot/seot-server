@@ -27,5 +27,9 @@ class App(models.Model):
         else:
             return "No attachment"
 
+    # 登録されているジョブを全てクリア（削除）する
+    def clear_jobs(self):
+        self.jobs.all().delete()
+
     def __str__(self):
         return '%s' % (self.name)
