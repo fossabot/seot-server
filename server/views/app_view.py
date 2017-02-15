@@ -6,9 +6,9 @@ from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 import yaml
-from .forms import AppForm
-from .models.app import App
-from .serializer import NodeSerializer
+from server.models.app import App
+from server.forms import AppForm
+from server.serializer import NodeSerializer
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
 

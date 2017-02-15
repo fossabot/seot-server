@@ -12,12 +12,12 @@ from rest_framework.decorators import parser_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 
-from .models.agent import Agent
-from .models.app import App
-from .models.job import Job
-from .models.node import Node
-from .models.nodetype import NodeType
-from .models.status import AppStatus
+from server.models.agent import Agent
+from server.models.app import App
+from server.models.app_status import AppStatus
+from server.models.job import Job
+from server.models.node import Node
+from server.models.nodetype import NodeType
 UPLOAD_DIR = os.path.dirname(os.path.abspath(__file__)) + '/static/files'
 
 
@@ -41,7 +41,7 @@ class AppView():
     @transaction.atomic
     @csrf_exempt
     @parser_classes((JSONParser, ))
-    def app_stop_request(request, app_id):
+    def stop(request, app_id):
         app_request_base(request, app_id, RequestStatus.stop.value)
         return HttpResponseRedirect(reverse('ctrl_apps'))
 

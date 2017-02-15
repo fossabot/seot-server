@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 from django.utils.html import format_html
-from .status import AppStatus
+from .app_status import AppStatus
 
 
 class App(models.Model):
