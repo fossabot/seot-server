@@ -7,7 +7,6 @@ from rest_framework.decorators import parser_classes
 from rest_framework.parsers import JSONParser
 from server.models.app import App
 from server.models.app_status import AppStatus
-from server.models.job import Job
 from server.models.request_status import RequestStatus
 from server.models.uuid import UUID4
 from server.views.json_view import JSONView
@@ -55,5 +54,8 @@ class AppView:
                 "app_status": str(app.status)
             }
             return JSONView.response(response, status=200)
-        except Job.DoesNotExist:
-            return JSONView.response({}, status=400)
+        except App.DoesNotExist:
+            response = {
+                "error": "App does not exist.",
+            }
+            return JSONView.response(response, status=400)
