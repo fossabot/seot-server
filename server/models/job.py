@@ -2,7 +2,7 @@ import uuid
 from django.db import models
 from .agent import Agent
 from .app import App
-from .status import JobStatus
+from .job_status import JobStatus
 
 
 class Job(models.Model):

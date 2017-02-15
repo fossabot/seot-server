@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 from django.utils.html import format_html
-from .status import AppStatus
+from .app_status import AppStatus
 
 
 class App(models.Model):
@@ -19,13 +19,17 @@ class App(models.Model):
         verbose_name='App Status'
     )
 
-    def file_link(self):
+    def download_link_tag(self):
         if self.yaml_file:
             return format_html(
                     '<a href="{}">download file<>',
                     self.define_file.url)
         else:
             return "No attachment"
+
+    # 登録されているジョブを全てクリア（削除）する
+    def clear_jobs(self):
+        self.jobs.all().delete()
 
     def __str__(self):
         return '%s' % (self.name)

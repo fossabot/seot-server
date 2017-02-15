@@ -1,6 +1,6 @@
 {% extends "server/base.html" %}
 
-{% block title %}アプリ起動/停止管理画面{% endblock title %}
+{% block title %}SEoTトップページ{% endblock title %}
 {% block content %}
     {% csrf_token %}
     {% load static %}
@@ -36,6 +36,9 @@
         </tr>
     {% endfor %}
     </table>
+
+    <p><a href="{% url 'upload_file' %}">ファイルアップロード</a></p>
+
     <script>
         setTimeout(function(){location.reload()}, 5000);
     </script>
