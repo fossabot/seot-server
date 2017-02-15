@@ -23,7 +23,6 @@ class GreedySchduler(AbstScheduler):
         job = self._open_job()
 
         if job is None:
-            print('job is none')
             return None
         while True:
             node = job.find_executable_node(self.candidate_nodes)
@@ -35,13 +34,14 @@ class GreedySchduler(AbstScheduler):
                     break
                 elif len(self.define_nodes) == 0\
                         or len(self.candidate_nodes) == 0:
-                    print("define_nodes update error")
+                    self._close_job(job)
+                    self._clear_jobs()
                     return None
             else:
                 self._close_job(job)
                 job = self._open_job()
                 if job is None:
-                    print("couldn't create job")
+                    self._clear_jobs()
                     return None
                 elif len(self.define_nodes) == 0\
                         and len(self.candidate_nodes) == 0:
@@ -73,9 +73,14 @@ class GreedySchduler(AbstScheduler):
         return job
 
     def _update_job(self, job, node):
-        job.nodes.add(node)
-        self._update_candidates(node)
+        if job is not None:
+            job.nodes.add(node)
+            self._update_candidates(node)
 
     def _close_job(self, job):
         self.jobs.append(job)
         job.save()
+
+    def _clear_jobs(self):
+        for j in self.jobs:
+            j.delete()

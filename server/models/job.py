@@ -70,4 +70,5 @@ class Job(models.Model):
             agent.allocated_jobs.add(job)
             return job, agent
         else:
+            job.delete()
             return None, None
