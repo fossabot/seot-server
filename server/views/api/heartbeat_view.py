@@ -33,6 +33,7 @@ class HeartbeatView:
 
             agent.update_nodetypes(data['nodes'])
             agent.update_latest_heartbeat_at(timezone.now())
+            agent.active = True
             agent.save()
 
             job = Job.objects.get(allocated_agent_id=agent.id)

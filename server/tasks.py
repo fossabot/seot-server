@@ -9,5 +9,7 @@ from .models.agent import Agent
 def check_timeout():
     print('timeout')
     delay = timedelta(seconds=10)
-    Agent.objects.filter(
-        latest_heartbeat_at__lte=(timezone.now() - delay)).delete()
+    for a in Agent.objects.filter(
+            latest_heartbeat_at__lte=(timezone.now() - delay), active=True):
+        a.active = False
+        a.save()

@@ -62,7 +62,8 @@ class Job(models.Model):
     def new(cls, name, node, asigned_agents):
         job = cls.objects.create(name=name)
         agent_list = [a for a in Agent.objects.filter(
-            available_node_types__name__contains=node.node_type.name)
+            available_node_types__name__contains=node.node_type.name,
+            active=True)
             if a not in asigned_agents]
         if agent_list:
             agent = agent_list.pop()
