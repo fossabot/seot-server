@@ -4,7 +4,7 @@ from .node import Node
 from .nodetype import NodeType
 
 
-class AppScheduleLogics(object):
+class AppScheduler(object):
     # appからjob群を生成
     def make_jobs(self):
         index = 0
@@ -17,7 +17,7 @@ class AppScheduleLogics(object):
         if not nodes_list:
             return None
         next_nodes = [n for n in nodes_list if n.is_source()]
-        job, node, agent = Job.create_new_job(
+        job, node, agent = Job.new(
                 str(self.id) + "_" + str(index),
                 next_nodes,
                 already_asigned_agents)
@@ -45,12 +45,12 @@ class AppScheduleLogics(object):
                 if job is None:
                     print("couldn't create job")
                     return None
-        self.create_zmq_pare()
+        self.create_zmq_pair()
         return jobs
 
     # job内の末端ノードで、かつ、別job内に位置するnext_nodesを持つノードを
     # 選び出し、そのノードとnext_nodesとの間に ZMQSink / ZMQSourceのペアを挿入
-    def create_zmq_pare(self):
+    def create_zmq_pair(self):
         zmq_sink_type = NodeType.objects.get(name="ZMQSink")
         zmq_source_type = NodeType.objects.get(name="ZMQSource")
 
@@ -72,12 +72,16 @@ class AppScheduleLogics(object):
                 self.nodes.add(zmq_sink)
                 self.nodes.add(zmq_source)
 
-                addr = str(n.job.allocated_agent.ip_addr)
-                port = str(n.job.allocated_agent.dpp_listen_port)
                 target_ip_addr = {}
-                target_ip_addr['url'] = 'tcp://'\
-                                        + addr\
-                                        + ':'\
-                                        + port
+                target_ip_addr['url'] = 'tcp://{0}:{1}'.format(
+                        str(n.job.allocated_agent.ip_addr),
+                        str(n.job.allocated_agent.dpp_listen_port))
                 zmq_sink.args = json.dumps(target_ip_addr)
                 zmq_sink.save()
+
+    def update_nextnodes(self, node):
+        for next_node in node.next_nodes.all():
+            if next_node not in self.next_nodes and next_node.job is None:
+                self.next_nodes.append(next_node)
+        if node in self.next_nodes:
+            self.next_nodes.remove(node)

@@ -1,14 +1,16 @@
+import json
 import uuid
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 from django.utils.html import format_html
-from .app_schedule_logics import AppScheduleLogics
-from .app_setup_logics import AppSetupLogics
+from server.serializer import NodeSerializer
+import yaml
+from .app_scheduler import AppScheduler
 from .app_status import AppStatus
 
 
-class App(models.Model, AppSetupLogics, AppScheduleLogics):
+class App(models.Model, AppScheduler):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=128, blank=True)
     user = models.ForeignKey(User, related_name="apps", blank=True, null=True)
@@ -35,3 +37,41 @@ class App(models.Model, AppSetupLogics, AppScheduleLogics):
 
     def __str__(self):
         return '%s' % (self.name)
+
+    # ymlファイルロードしてnodeインスタンス群を生成
+    def setup_nodes(self):
+        define_file = self.define_file
+        define_file.open(mode='rb')
+        nodes_data = yaml.load(define_file)
+        define_file.close()
+        return self._setup_nodes_from_data(nodes_data)
+
+    # nodeオブジェクトデータのリストからnodeオブジェクト生成、
+    # 自身に紐付ける
+    def _setup_nodes_from_data(self, nodes_data):
+        exist_nodes = []
+        while True:
+            node_gen = [n for n in nodes_data
+                        if 'to' not in n
+                        or [n.name for n in exist_nodes if n in n['to']]
+                        == n['to']]
+            for node_data in node_gen:
+                if 'args' in node_data:
+                    node_data['args_str'] = json.dumps(node_data['args'])
+                serializer = NodeSerializer(data=node_data)
+                node = None
+                if serializer.is_valid():
+                    node = serializer.save()
+                else:
+                    print(serializer.errors)
+                if node is not None:
+                    self.nodes.add(node)
+                    exist_nodes.append(node)
+                    if 'to' in node_data:
+                        [node.next_nodes.add(n)
+                         for n in exist_nodes if n.name in node_data['to']]
+                nodes_data.remove(node_data)
+            if len(nodes_data) == 0:
+                return exist_nodes
+            elif len(exist_nodes) == 0:
+                return None
