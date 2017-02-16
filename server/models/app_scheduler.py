@@ -51,3 +51,4 @@ class AppScheduler(object):
                         str(n.job.allocated_agent.dpp_listen_port))
                 zmq_sink.args = json.dumps(target_ip_addr)
                 zmq_sink.save()
+        return self.nodes.all()
