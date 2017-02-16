@@ -4,33 +4,37 @@ from .job import Job
 
 class GreedySchduler(AbstScheduler):
     def __init__(self):
-        self.nodes_list = []
-        self.next_nodes = []
-        self.already_asigned_agents = []
+        self.define_nodes = []
+        self.candidate_nodes = []
+        self.asigned_agents = []
         self.index = 0
         self.jobs = []
+        self.app_id = ''
 
-    # appからjob群を生成
+    # appからjobリストを生成
     def init_jobs(self, app):
+        self.app_id = app.id
         for n in app.nodes.all():
-            self.nodes_list.append(n)
-        if not self.nodes_list:
+            self.define_nodes.append(n)
+        if not self.define_nodes:
             print('no nodes in app')
             return None
-        self.next_nodes = [n for n in self.nodes_list if n.is_source()]
-        job = self._open_job(app)
+        self.candidate_nodes = [n for n in self.define_nodes if n.is_source()]
+        job = self._open_job()
         if job is None:
             print('job is none')
             return None
         while True:
-            node = job.find_executable_node(self.next_nodes)
+            node = job.find_executable_node(self.candidate_nodes)
             if node is not None:
                 self._update_job(job, node)
-                if len(self.nodes_list) == 0 and len(self.next_nodes) == 0:
+                if len(self.define_nodes) == 0\
+                        and len(self.candidate_nodes) == 0:
                     self._close_job(job)
                     break
-                elif len(self.nodes_list) == 0 or len(self.next_nodes) == 0:
-                    print("nodes_list update error")
+                elif len(self.define_nodes) == 0\
+                        or len(self.candidate_nodes) == 0:
+                    print("define_nodes update error")
                     return None
             else:
                 self._close_job(job)
@@ -40,32 +44,32 @@ class GreedySchduler(AbstScheduler):
                     return None
         return self.jobs
 
-    # next_nodesリスト（次にJobに割り当てるnodeのリスト）を更新
+    # candidate_nodesリスト（次にJobに割り当てるnodeのリスト）を更新
     # 直前にJobに割り当てたnodeを引数として受取り、そのnodeからつながるnode群を
-    # next_nodesにappend (この際next_nodes内で重複が起きないようにする)
-    # その後割当て済みのnodeをnext_nodes, nodes_listから取り除く
-    def _update_nodeslist(self, node):
+    # candidate_nodesにappend (この際candidate_nodes内で重複が起きないようにする)
+    # その後割当て済みのnodeをcandidate_nodes, nodes_listから取り除く
+    def _update_candidates(self, node):
         for next_node in node.next_nodes.all():
-            if next_node not in self.next_nodes and next_node.job is None:
-                self.next_nodes.append(next_node)
-        if node in self.next_nodes:
-            self.next_nodes.remove(node)
-        if node in self.nodes_list:
-            self.nodes_list.remove(node)
+            if next_node not in self.candidate_nodes and next_node.job is None:
+                self.candidate_nodes.append(next_node)
+        if node in self.candidate_nodes:
+            self.candidate_nodes.remove(node)
+        if node in self.define_nodes:
+            self.define_nodes.remove(node)
 
-    def _open_job(self, app):
+    def _open_job(self):
         job, agent = Job.new(
-                str(app.id) + "_" + str(self.index),
-                self.next_nodes[0],
-                self.already_asigned_agents)
-        self._update_job(job, self.next_nodes[0])
-        self.already_asigned_agents.append(agent)
+                str(self.app_id) + "_" + str(self.index),
+                self.candidate_nodes[0],
+                self.asigned_agents)
+        self._update_job(job, self.candidate_nodes[0])
+        self.asigned_agents.append(agent)
         self.index += 1
         return job
 
     def _update_job(self, job, node):
         job.nodes.add(node)
-        self._update_nodeslist(node)
+        self._update_candidates(node)
 
     def _close_job(self, job):
         self.jobs.append(job)
