@@ -66,10 +66,14 @@ class HeartbeatView:
         except Job.DoesNotExist:
             # ジョブがない場合のレスポンス
             response = {
+                "error": "Job does not exist.",
                 "run": None,
                 "kill": None,
             }
             return JSONView.response(response, status=200)
         except User.DoesNotExist:
             # ユーザが存在しない場合
-            return JSONView.response({}, status=400)
+            response = {
+                "error": "User does not exist.",
+            }
+            return JSONView.response(response, status=400)

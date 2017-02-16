@@ -42,7 +42,10 @@ class JobView:
             }
             return JSONResponse(response, status=200)
         except Job.DoesNotExist:
-            return JSONResponse({}, status=400)
+            response = {
+                "error": "Job does not exist.",
+            }
+            return JSONResponse(response, status=400)
 
     @staticmethod
     def _post(request, job_id, request_status):
@@ -103,7 +106,10 @@ class JobView:
             }
             return JSONResponse(response, status=200)
         except Job.DoesNotExist:
-            return JSONResponse({}, status=400)
+            response = {
+                "error": "Job does not exist."
+            }
+            return JSONResponse(response, status=400)
 
     @classmethod
     @transaction.atomic
