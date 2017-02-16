@@ -21,7 +21,7 @@ class AppView:
     def launch(cls, request, app_id):
         try:
             app = App.objects.get(id=app_id)
-            if app.make_jobs():
+            if app.launch_jobs():
                 cls._post(
                         request, app_id, RequestStatus.accept.value)
         except ObjectDoesNotExist:

@@ -1,44 +1,17 @@
 import json
-from .job import Job
+from .greedy_scheduler import GreedySchduler
 from .node import Node
 from .nodetype import NodeType
 
 
 class AppScheduler(object):
-    nodes_list = []
-    next_nodes = []
-    already_asigned_agents = []
-    index = 0
-    jobs = []
-
-    # appからjob群を生成
-    def make_jobs(self):
-        for n in self.nodes.all():
-            self.nodes_list.append(n)
-        if not self.nodes_list:
-            return None
-        self.next_nodes = [n for n in self.nodes_list if n.is_source()]
-        job = self._open_job()
-        if job is None:
-            print('job is none')
-            return None
-        while True:
-            node = job.find_executable_node(self.next_nodes)
-            if node is not None:
-                self._update_job(job, node)
-                if not self.nodes_list and not self.next_nodes:
-                    self._close_job(job)
-                    break
-                elif not self.nodes_list or not self.next_nodes:
-                    print("nodes_list update error")
-                    return None
-            else:
-                self._close_job(job)
-                job = self._open_job()
-                if job is None:
-                    print("couldn't create job")
-                    return None
-        # self._create_zmq_pair()
+    def launch_jobs(self):
+        greedy_sch = GreedySchduler()
+        jobs = greedy_sch.init_jobs(self)
+        for j in jobs:
+            self.jobs.add(j)
+        self._create_zmq_pair()
+        self.save()
         return self.jobs.all()
 
     # job内の末端ノードで、かつ、別job内に位置するnext_nodesを持つノードを
@@ -71,38 +44,3 @@ class AppScheduler(object):
                         str(n.job.allocated_agent.dpp_listen_port))
                 zmq_sink.args = json.dumps(target_ip_addr)
                 zmq_sink.save()
-
-    # appが持つnext_nodesリスト（次にJobに割り当てるnodeのリスト）を更新
-    # 直前にJobに割り当てたnodeを引数として受取り、そのnodeからつながるnode群を
-    # next_nodesにappend (この際next_nodes内で重複が起きないようにする)
-    # その後割当て済みのnodeをnext_nodes, nodes_listから取り除く
-    def _update_nodeslist(self, node):
-        for next_node in node.next_nodes.all():
-            if next_node not in self.next_nodes and next_node.job is None:
-                self.next_nodes.append(next_node)
-        if node in self.next_nodes:
-            self.next_nodes.remove(node)
-        if node in self.nodes_list:
-            self.nodes_list.remove(node)
-
-    def _open_job(self):
-        job, agent = Job.new(
-                str(self.id) + "_" + str(self.index),
-                self.next_nodes[0],
-                self.already_asigned_agents)
-        print('job created with...')
-        print(self.next_nodes[0])
-        self._update_job(job, self.next_nodes[0])
-        self.already_asigned_agents.append(agent)
-        self.index += 1
-        return job
-
-    def _update_job(self, job, node):
-        print('job update with...')
-        print(node)
-        job.nodes.add(node)
-        self._update_nodeslist(node)
-
-    def _close_job(self, job):
-        self.jobs.add(job)
-        job.save()
