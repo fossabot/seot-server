@@ -19,6 +19,9 @@ class AppScheduler(object):
             return None
         self.next_nodes = [n for n in self.nodes_list if n.is_source()]
         job = self._open_job()
+        if job is None:
+            print('job is none')
+            return None
         while True:
             node = job.find_executable_node(self.next_nodes)
             if node is not None:
@@ -35,7 +38,7 @@ class AppScheduler(object):
                 if job is None:
                     print("couldn't create job")
                     return None
-        self._create_zmq_pair()
+        # self._create_zmq_pair()
         return self.jobs.all()
 
     # job内の末端ノードで、かつ、別job内に位置するnext_nodesを持つノードを
@@ -87,12 +90,16 @@ class AppScheduler(object):
                 str(self.id) + "_" + str(self.index),
                 self.next_nodes[0],
                 self.already_asigned_agents)
-        self._update_nodeslist(self.next_nodes[0])
+        print('job created with...')
+        print(self.next_nodes[0])
+        self._update_job(job, self.next_nodes[0])
         self.already_asigned_agents.append(agent)
         self.index += 1
         return job
 
     def _update_job(self, job, node):
+        print('job update with...')
+        print(node)
         job.nodes.add(node)
         self._update_nodeslist(node)
 

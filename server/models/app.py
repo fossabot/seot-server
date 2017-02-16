@@ -61,10 +61,10 @@ class App(models.Model, AppScheduler):
                 print(serializer.errors)
             if node is not None:
                 self.nodes.add(node)
-                exist_nodes[node_data] = node
-        for node_data, node in exist_nodes.items():
+                exist_nodes[node] = node_data
+        for node, node_data in exist_nodes.items():
             if 'to' in node_data:
                 [node.next_nodes.add(n)
-                 for n in exist_nodes.values()
+                 for n in exist_nodes.keys()
                  if n.name in node_data['to']]
-        return exist_nodes.values()
+        return exist_nodes.keys()
