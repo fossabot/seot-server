@@ -1,9 +1,8 @@
 import uuid
 from django.db import models
-from .node_logics import NodeLogics
 
 
-class Node(models.Model, NodeLogics):
+class Node(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     node_type = models.ForeignKey(
             'NodeType',
@@ -41,3 +40,21 @@ class Node(models.Model, NodeLogics):
 
     def __str__(self):
         return '%s' % (self.name)
+
+    # nodeが始端ノードであるか判定
+    def is_source(self):
+        num = self.before_nodes.count()
+        if num == 0:
+            return True
+        return False
+
+    # ノードタイプがセンサ系か否か
+    # センサ系ならノード名文字列を、そうでなければNullを返す
+    def sensor_name(self):
+        if self.node_type is not None:
+            if self.node_type.name in [
+                    "StubSenseHatSource",
+                    "SenseHatSource",
+                    "PiCameraSource"]:
+                return self.node_type.name
+        return None
