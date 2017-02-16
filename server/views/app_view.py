@@ -26,8 +26,8 @@ class AppView:
             if form.is_valid():
                 app = form.save()
                 app.user = request.user
+                app.setup_nodes()
                 app.save()
-                app.app_to_nodes()
                 return HttpResponseRedirect(reverse('toppage'))
         else:
             form = AppForm(initial={'user': request.user.username})

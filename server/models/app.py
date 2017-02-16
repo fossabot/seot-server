@@ -42,36 +42,29 @@ class App(models.Model, AppScheduler):
     def setup_nodes(self):
         define_file = self.define_file
         define_file.open(mode='rb')
-        nodes_data = yaml.load(define_file)
+        define_yml = yaml.load(define_file)
         define_file.close()
-        return self._setup_nodes_from_data(nodes_data)
+        return self._setup_nodes_from_list(define_yml['nodes'])
 
     # nodeオブジェクトデータのリストからnodeオブジェクト生成、
-    # 自身に紐付ける
-    def _setup_nodes_from_data(self, nodes_data):
-        exist_nodes = []
-        while True:
-            node_gen = [n for n in nodes_data
-                        if 'to' not in n
-                        or [n.name for n in exist_nodes if n in n['to']]
-                        == n['to']]
-            for node_data in node_gen:
-                if 'args' in node_data:
-                    node_data['args_str'] = json.dumps(node_data['args'])
-                serializer = NodeSerializer(data=node_data)
-                node = None
-                if serializer.is_valid():
-                    node = serializer.save()
-                else:
-                    print(serializer.errors)
-                if node is not None:
-                    self.nodes.add(node)
-                    exist_nodes.append(node)
-                    if 'to' in node_data:
-                        [node.next_nodes.add(n)
-                         for n in exist_nodes if n.name in node_data['to']]
-                nodes_data.remove(node_data)
-            if len(nodes_data) == 0:
-                return exist_nodes
-            elif len(exist_nodes) == 0:
-                return None
+    # app自身に紐付ける
+    def _setup_nodes_from_list(self, n_list):
+        exist_nodes = {}
+        for node_data in n_list:
+            if 'args' in node_data:
+                node_data['args_str'] = json.dumps(node_data['args'])
+            serializer = NodeSerializer(data=node_data)
+            node = None
+            if serializer.is_valid():
+                node = serializer.save()
+            else:
+                print(serializer.errors)
+            if node is not None:
+                self.nodes.add(node)
+                exist_nodes[node_data] = node
+        for node_data, node in exist_nodes.items():
+            if 'to' in node_data:
+                [node.next_nodes.add(n)
+                 for n in exist_nodes.values()
+                 if n.name in node_data['to']]
+        return exist_nodes.values()

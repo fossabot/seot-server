@@ -5,52 +5,42 @@ from .nodetype import NodeType
 
 
 class AppScheduler(object):
+    nodes_list = []
+    next_nodes = []
+    already_asigned_agents = []
+    index = 0
+    jobs = []
+
     # appからjob群を生成
     def make_jobs(self):
-        index = 0
-        jobs = []
-        already_asigned_agents = []
-        nodes = self.nodes.all()
-        nodes_list = []
-        for n in nodes:
-            nodes_list.append(n)
-        if not nodes_list:
+        for n in self.nodes.all():
+            self.nodes_list.append(n)
+        if not self.nodes_list:
             return None
-        next_nodes = [n for n in nodes_list if n.is_source()]
-        job, node, agent = Job.new(
-                str(self.id) + "_" + str(index),
-                next_nodes,
-                already_asigned_agents)
-        index += 1
+        self.next_nodes = [n for n in self.nodes_list if n.is_source()]
+        job = self._open_job()
         while True:
-            job.add_node(node, next_nodes)
-            nodes_list.remove(node)
-            if len(nodes_list) == 0:
-                self.jobs.add(job)
-                job.save()
-                jobs.append(job)
-                break
-            node = job.find_next_node(next_nodes)
+            node = job.find_executable_node(self.next_nodes)
             if node is not None:
-                pass
+                self._update_job(job, node)
+                if not self.nodes_list and not self.next_nodes:
+                    self._close_job(job)
+                    break
+                elif not self.nodes_list or not self.next_nodes:
+                    print("nodes_list update error")
+                    return None
             else:
-                self.jobs.add(job)
-                job.save()
-                jobs.append(job)
-                already_asigned_agents.append(agent)
-                job, node, agent = Job.create_new_job(
-                    str(self.id) + "_" + str(index),
-                    next_nodes, already_asigned_agents)
-                index += 1
+                self._close_job(job)
+                job = self._open_job()
                 if job is None:
                     print("couldn't create job")
                     return None
-        self.create_zmq_pair()
-        return jobs
+        self._create_zmq_pair()
+        return self.jobs.all()
 
     # job内の末端ノードで、かつ、別job内に位置するnext_nodesを持つノードを
     # 選び出し、そのノードとnext_nodesとの間に ZMQSink / ZMQSourceのペアを挿入
-    def create_zmq_pair(self):
+    def _create_zmq_pair(self):
         zmq_sink_type = NodeType.objects.get(name="ZMQSink")
         zmq_source_type = NodeType.objects.get(name="ZMQSource")
 
@@ -79,9 +69,33 @@ class AppScheduler(object):
                 zmq_sink.args = json.dumps(target_ip_addr)
                 zmq_sink.save()
 
-    def update_nextnodes(self, node):
+    # appが持つnext_nodesリスト（次にJobに割り当てるnodeのリスト）を更新
+    # 直前にJobに割り当てたnodeを引数として受取り、そのnodeからつながるnode群を
+    # next_nodesにappend (この際next_nodes内で重複が起きないようにする)
+    # その後割当て済みのnodeをnext_nodes, nodes_listから取り除く
+    def _update_nodeslist(self, node):
         for next_node in node.next_nodes.all():
             if next_node not in self.next_nodes and next_node.job is None:
                 self.next_nodes.append(next_node)
         if node in self.next_nodes:
             self.next_nodes.remove(node)
+        if node in self.nodes_list:
+            self.nodes_list.remove(node)
+
+    def _open_job(self):
+        job, agent = Job.new(
+                str(self.id) + "_" + str(self.index),
+                self.next_nodes[0],
+                self.already_asigned_agents)
+        self._update_nodeslist(self.next_nodes[0])
+        self.already_asigned_agents.append(agent)
+        self.index += 1
+        return job
+
+    def _update_job(self, job, node):
+        job.nodes.add(node)
+        self._update_nodeslist(node)
+
+    def _close_job(self, job):
+        self.jobs.add(job)
+        job.save()
