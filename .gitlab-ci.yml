@@ -34,7 +34,7 @@ deploy_development:
     - echo "$DOKKU_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H 'mars.ais.cmc.osaka-u.ac.jp' >> ~/.ssh/known_hosts
-    - git push -f dokku@mars.ais.cmc.osaka-u.ac.jp:seot-staging $CI_BUILD_REF:master
+    - git push -f dokku@mars.ais.cmc.osaka-u.ac.jp:seot-dev $CI_BUILD_REF:master
   only:
     - develop
 
@@ -48,6 +48,6 @@ deploy_production:
     - echo "$DOKKU_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H 'mars.ais.cmc.osaka-u.ac.jp' >> ~/.ssh/known_hosts
-    - git push -f dokku@mars.ais.cmc.osaka-u.ac.jp:seot-staging $CI_BUILD_REF:master
+    - git push -f dokku@mars.ais.cmc.osaka-u.ac.jp:seot $CI_BUILD_REF:master
   only:
     - master
