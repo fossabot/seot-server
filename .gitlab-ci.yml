@@ -24,11 +24,25 @@ check_migrations:
     - pip install -r requirements.txt
     - python manage.py makemigrations --check
 
-deploy_to_dokku:
+deploy_development:
   stage: deploy
   environment:
-    name: staging
-    url: http://seot-staging.mars.ais.cmc.osaka-u.ac.jp
+    name: development
+    url: http://seot-dev.mars.ais.cmc.osaka-u.ac.jp
+  script:
+    - mkdir -p ~/.ssh
+    - echo "$DOKKU_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H 'mars.ais.cmc.osaka-u.ac.jp' >> ~/.ssh/known_hosts
+    - git push -f dokku@mars.ais.cmc.osaka-u.ac.jp:seot-staging $CI_BUILD_REF:master
+  only:
+    - develop
+
+deploy_production:
+  stage: deploy
+  environment:
+    name: production
+    url: http://seot.mars.ais.cmc.osaka-u.ac.jp
   script:
     - mkdir -p ~/.ssh
     - echo "$DOKKU_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
