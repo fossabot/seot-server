@@ -5,6 +5,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from server.forms import AppForm
 from server.models.app import App
+from server.models.app_status import AppStatus
 
 
 class AppView:
@@ -13,9 +14,14 @@ class AppView:
     @login_required
     def get(request):
         app_list = []
+        waiting = False
         for app in App.objects.filter(user=request.user):
             app_list.append(app)
-        return render(request, 'server/toppage.html', {'app_list': app_list})
+            if app.status == AppStatus.launching.value\
+                    or app.status == AppStatus.stopping.value:
+                waiting = True
+        return render(request, 'server/toppage.html',
+                      {'app_list': app_list, 'waiting': waiting})
 
     @staticmethod
     @transaction.atomic

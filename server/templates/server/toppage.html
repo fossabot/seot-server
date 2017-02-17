@@ -11,9 +11,15 @@
             <td>{{ app.name  }}</td>
             {% if app.status == 1 %}
                 <td>
-                    <a href="{% url 'app_launch' app.id%}">
-                        <button>launch</button>
-                    </a>
+                    {% if waiting == False %}
+                        <a href="{% url 'app_launch' app.id%}">
+                            <button>launch</button>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'app_launch' app.id%}">
+                            <button disabled>launch</button>
+                        </a>
+                    {% endif %}
                 </td>
                 <td>idle</td>
             {% elif app.status == 2 %}
@@ -21,9 +27,15 @@
                 <td>launching</td>
             {% elif app.status == 3 %}
                 <td>
-                    <a href="{% url 'app_stop' app.id  %}">
-                        <button>stop</button>
-                    </a>
+                    {% if waiting == False %}
+                        <a href="{% url 'app_stop' app.id  %}">
+                            <button>stop</button>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'app_stop' app.id  %}">
+                            <button disabled>stop</button>
+                        </a>
+                    {% endif %}
                 </td>
                 <td>runnning</td>
             {% elif app.status == 4 %}
