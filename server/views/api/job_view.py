@@ -95,9 +95,11 @@ class JobView:
                 # appの全jobがidleのとき、AppStatusをidleに
                 if not job.application.jobs.exclude(
                         status=JobStatus.idle.value).exists():
-                    job.application.status = AppStatus.idle.value
-                    job.application.save()
-                    job.application.clear_jobs()
+                    app = job.application
+                    app.status = AppStatus.idle.value
+                    app.clear_nodes()
+                    app.clear_jobs()
+                    app.save()
 
             response = {
                 "job_id": str(job.id),

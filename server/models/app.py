@@ -37,28 +37,33 @@ class App(models.Model, AppScheduler):
     def clear_jobs(self):
         self.jobs.all().delete()
 
-    # 登録されているジョブのうち、自動生成されたもの（zmq_sink/_source）
+    # 登録されているノードのうち、自動生成されたもの（zmq_sink/_source）
     # をすべてクリアする
     def clear_nodes(self):
-        for sk in self.nodes.filter(
+        for src in self.nodes.filter(
                 automatically_added=True,
-                node_type__name__exact='ZMQSink'):
-            src_name = re.sub(r'_sink$', '_source', sk.name)
+                node_type__name__exact='ZMQSource',
+                name__endswith='_source'):
+            sink_name_endswith = '_to_' +\
+                                 re.sub(r'_source$', '_sink', src.name)
+            sk_nodes = self.nodes.filter(
+                    automatically_added=True,
+                    node_type__name__exact='ZMQSink',
+                    name__endswith=sink_name_endswith)
             try:
-                src = self.nodes.get(
-                        automatically_added=True,
-                        node_type__name__exact='ZMQSource',
-                        name=src_name)
-                before_n = sk.before_nodes.get()
                 next_n = src.next_nodes.get()
-                before_n.next_nodes.add(next_n)
-                before_n.save()
-                sk.delete()
+                for sk in sk_nodes:
+                    before_n = sk.before_nodes.get()
+                    before_n.next_nodes.add(next_n)
+                    before_n.save()
+                    sk.delete()
                 src.delete()
-            except Node.DoesNotExist:
-                pass
-            except Node.MultipleObjectsReturned:
-                pass
+            except Node.DoesNotExist as e:
+                print(str(e))
+                return None
+            except Node.MultipleObjectsReturned as e:
+                print(str(e))
+                return None
 
     def __str__(self):
         return '%s' % (self.name)
