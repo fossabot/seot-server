@@ -23,57 +23,51 @@ class HeartbeatView:
 
         try:
             user = User.objects.get(username=data['user_name'])
-            agent, created = Agent.objects.get_or_create(
-                    id=data['agent_id'],
-                    user_id=user.id,
-                    latitude=data['latitude'],
-                    longitude=data['longitude'],
-                    ip_addr=data['facts']['ip'],
-                    hostname=data['facts']['hostname'])
-
-            agent.update_nodetypes(data['nodes'])
-            agent.update_latest_heartbeat_at(timezone.now())
-            agent.active = True
-            agent.save()
-
-            job = Job.objects.get(allocated_agent_id=agent.id)
-            if job.application.status == AppStatus.launching.value and\
-                    job.status == JobStatus.idle.value:
-                # AppがlaunchingでJobがidleのとき
-                response = {
-                    "run": job.id,
-                    "kill": None,
-                }
-                job.status = JobStatus.accept_pending.value
-                job.save()
-                return JSONView.response(response, status=200)
-            elif job.application.status == AppStatus.stopping.value and\
-                    job.status == JobStatus.running.value:
-                # AppがstoppingでJobがrunnningのとき
-                response = {
-                    "run": None,
-                    "kill": job.id,
-                }
-                job.status = JobStatus.stop_pending.value
-                job.save()
-                return JSONView.response(response, status=200)
-            else:
-                response = {
-                    "run": None,
-                    "kill": None,
-                }
-                return JSONView.response(response, status=200)
-        except Job.DoesNotExist:
-            # ジョブがない場合のレスポンス
-            response = {
-                "error": "Job does not exist.",
-                "run": None,
-                "kill": None,
-            }
-            return JSONView.response(response, status=200)
         except User.DoesNotExist:
             # ユーザが存在しない場合
             response = {
                 "error": "User does not exist.",
             }
             return JSONView.response(response, status=400)
+
+        agent, created = Agent.objects.get_or_create(
+                id=data['agent_id'],
+                user_id=user.id,
+                latitude=data['latitude'],
+                longitude=data['longitude'],
+                ip_addr=data['facts']['ip'],
+                hostname=data['facts']['hostname'])
+
+        agent.update_nodetypes(data['nodes'])
+        agent.update_latest_heartbeat_at(timezone.now())
+        agent.active = True
+        agent.save()
+
+        jobs = Job.objects.filter(
+                allocated_agent_id=agent.id).order_by('updated_at')
+        for j in jobs:
+            if j.application.status == AppStatus.launching.value and\
+                    j.status == JobStatus.idle.value:
+                # AppがlaunchingでJobがidleのとき
+                response = {
+                    "run": j.id,
+                    "kill": None,
+                }
+                j.status = JobStatus.accept_pending.value
+                j.save()
+                return JSONView.response(response, status=200)
+            elif j.application.status == AppStatus.stopping.value and\
+                    j.status == JobStatus.running.value:
+                # AppがstoppingでJobがrunnningのとき
+                response = {
+                    "run": None,
+                    "kill": j.id,
+                }
+                j.status = JobStatus.stop_pending.value
+                j.save()
+                return JSONView.response(response, status=200)
+        response = {
+            "run": None,
+            "kill": None,
+        }
+        return JSONView.response(response, status=200)

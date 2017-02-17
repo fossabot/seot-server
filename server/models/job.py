@@ -24,6 +24,7 @@ class Job(models.Model):
         default=JobStatus.idle.value,
         verbose_name='Job Status'
     )
+    updated_at = models.DateTimeField(auto_now=True)
 
     def running(self):
         running = True
