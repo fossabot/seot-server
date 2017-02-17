@@ -25,14 +25,17 @@ class AppScheduler(object):
             for n in node.next_nodes.exclude(job=node.job):
                 zmq_sink = Node.objects.create(
                     node_type=zmq_sink_type,
-                    name=node.name + "_to_" + n.name + "_sink")
+                    name=node.name + "_to_" + n.name + "_sink",
+                    automatically_added=True)
                 try:
                     zmq_source = n.before_nodes.get(
-                        node_type=zmq_source_type)
+                        node_type=zmq_source_type,
+                        automatically_added=True)
                 except Node.DoesNotExist:
                     zmq_source = Node.objects.create(
                         node_type=zmq_source_type,
-                        name=n.name + '_source')
+                        name=n.name + '_source',
+                        automatically_added=True)
                 except Node.MultipleObjectsReturned:
                     return None
                 node.next_nodes.remove(n)

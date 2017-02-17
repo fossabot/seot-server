@@ -28,6 +28,7 @@ class Node(models.Model):
             related_name="nodes",
             blank=True,
             null=True)
+    automatically_added = models.BooleanField(default='False')
 
     def type_name(self):
         return self.node_type.name
