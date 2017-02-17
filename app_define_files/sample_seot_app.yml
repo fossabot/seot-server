@@ -7,9 +7,7 @@ nodes:
       hoge: hoi
     interval: 1
   to:
-    - debug2
-- name: debug2
-  type: DebugSink
+    - debug
 - name: sense
   type: StubSenseHatSource
   to:

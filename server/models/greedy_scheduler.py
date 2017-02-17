@@ -21,6 +21,7 @@ class GreedySchduler(AbstScheduler):
             return None
         self.candidate_nodes = [n for n in self.define_nodes if n.is_source()]
         job = self._open_job()
+
         if job is None:
             print('job is none')
             return None
@@ -42,6 +43,10 @@ class GreedySchduler(AbstScheduler):
                 if job is None:
                     print("couldn't create job")
                     return None
+                elif len(self.define_nodes) == 0\
+                        and len(self.candidate_nodes) == 0:
+                    self._close_job(job)
+                    break
         return self.jobs
 
     # candidate_nodesリスト（次にJobに割り当てるnodeのリスト）を更新

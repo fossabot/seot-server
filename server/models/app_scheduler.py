@@ -10,7 +10,8 @@ class AppScheduler(object):
         jobs = greedy_sch.init_jobs(self)
         for j in jobs:
             self.jobs.add(j)
-        self._create_zmq_pair()
+        if self._create_zmq_pair() is None:
+            return None
         self.save()
         return self.jobs.all()
 
@@ -25,9 +26,15 @@ class AppScheduler(object):
                 zmq_sink = Node.objects.create(
                     node_type=zmq_sink_type,
                     name=node.name + "_to_" + n.name + "_sink")
-                zmq_source = Node.objects.create(
-                    node_type=zmq_source_type,
-                    name=node.name + "_to_" + n.name + "_source")
+                try:
+                    zmq_source = n.before_nodes.get(
+                        node_type=zmq_source_type)
+                except Node.DoesNotExist:
+                    zmq_source = Node.objects.create(
+                        node_type=zmq_source_type,
+                        name=n.name + '_source')
+                except Node.MultipleObjectsReturned:
+                    return None
                 node.next_nodes.remove(n)
                 node.next_nodes.add(zmq_sink)
                 zmq_source.next_nodes.add(n)
@@ -44,3 +51,4 @@ class AppScheduler(object):
                         str(n.job.allocated_agent.dpp_listen_port))
                 zmq_sink.args = json.dumps(target_ip_addr)
                 zmq_sink.save()
+        return self.nodes.all()
