@@ -18,7 +18,7 @@ $ python manage.py migrate
 ## Run Server
 
 ```
-$ celery -A seot_server beat
+$ celery -A seot_server worker -B
 $ python manage.py runserver
 ```
 
