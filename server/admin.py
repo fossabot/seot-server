@@ -14,7 +14,8 @@ class AppAdmin(admin.ModelAdmin):
 
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user_id', 'ip_addr', 'latest_heartbeat_at')
+    list_display = (
+            'id', 'user_id', 'ip_addr', 'active', 'latest_heartbeat_at')
 
 
 @admin.register(NodeType)
