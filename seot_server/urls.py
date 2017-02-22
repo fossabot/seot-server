@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 # from server.urls import router as server_router
 
@@ -24,3 +25,5 @@ urlpatterns = [
     url(r'^', include('server.urls.app')),
     url(r'^api/', include('server.urls.api')),
 ]
+
+urlpatterns += staticfiles_urlpatterns()
