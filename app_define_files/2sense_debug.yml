@@ -1,0 +1,17 @@
+nodes:
+- name: sense1
+  type: SenseHatSource
+  to:
+    - docker
+- name: sense2
+  type: SenseHatSource
+  to:
+    - docker
+- name: docker
+  type: DockerTransformer
+  args:
+    repo: registry.ais.cmc.osaka-u.ac.jp/tis/seot-docker-test
+  to:
+    - debug
+- name: debug
+  type: DebugSink

@@ -1,0 +1,7 @@
+nodes:
+- name: cam
+  type: PiCameraSource
+  to:
+    - debug
+- name: debug
+  type: DebugSink

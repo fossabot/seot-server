@@ -1,0 +1,13 @@
+nodes:
+- name: cam
+  type: PiCameraSource
+  to:
+    - docker
+- name: debug
+  type: DebugSink
+- name: docker
+  type: DockerTransformer
+  args:
+    repo: registry.ais.cmc.osaka-u.ac.jp/yamada/seot-app-facedetect
+  to:
+    - debug

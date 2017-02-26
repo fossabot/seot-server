@@ -29,6 +29,7 @@ class Node(models.Model):
             blank=True,
             null=True)
     automatically_added = models.BooleanField(default='False')
+    listen_port = models.IntegerField(default=None, blank=True, null=True)
 
     def type_name(self):
         return self.node_type.name

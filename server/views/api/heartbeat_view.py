@@ -46,6 +46,33 @@ class HeartbeatView:
         jobs = Job.objects.filter(
                 allocated_agent_id=agent.id).order_by('updated_at')
         for j in jobs:
+            # 複数のjob/acceptをほぼ同時に受け取ったとき、appのstatusが
+            # 更新されない問題への対処
+            # runnningなjobを持っているエージェントからのheartbeatを受信し、
+            # かつそのjobが属するappがlaunchingなとき、その他のjobの状態を見て
+            # appのstatusを更新
+            if j.application.status == AppStatus.launching.value and\
+                    j.status == JobStatus.running.value:
+                if j.application.jobs.exclude(
+                        status=JobStatus.running.value).exists():
+                    pass
+                else:
+                    j.application.status = AppStatus.running.value
+                    j.application.save()
+
+            if j.application.status == AppStatus.stopping.value and\
+                    j.status == JobStatus.idle.value:
+                if j.application.jobs.exclude(
+                        status=JobStatus.idle.value).exists():
+                    pass
+                else:
+                    app = j.application
+                    app.status = AppStatus.idle.value
+                    app.clear_nodes()
+                    app.clear_jobs()
+                    app.save()
+                    continue
+
             if j.application.status == AppStatus.launching.value and\
                     j.status == JobStatus.idle.value:
                 # AppがlaunchingでJobがidleのとき
