@@ -53,7 +53,8 @@ class HeartbeatView:
             # appのstatusを更新
             if j.application.status == AppStatus.launching.value and\
                     j.status == JobStatus.running.value:
-                if j.application.jobs.exclude(status=JobStatus.running.value).exists():
+                if j.application.jobs.exclude(
+                        status=JobStatus.running.value).exists():
                     pass
                 else:
                     j.application.status = AppStatus.running.value
@@ -61,7 +62,8 @@ class HeartbeatView:
 
             if j.application.status == AppStatus.stopping.value and\
                     j.status == JobStatus.idle.value:
-                if j.application.jobs.exclude(status=JobStatus.idle.value).exists():
+                if j.application.jobs.exclude(
+                        status=JobStatus.idle.value).exists():
                     pass
                 else:
                     app = j.application
