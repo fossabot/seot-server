@@ -15,7 +15,8 @@ class AppAdmin(admin.ModelAdmin):
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):
     list_display = (
-            'id', 'user_id', 'ip_addr', 'active', 'latest_heartbeat_at')
+            'id', 'user_id', 'ip_addr', 'active', 'latest_heartbeat_at',
+            'dpp_listen_port')
 
 
 @admin.register(NodeType)
@@ -31,7 +32,7 @@ class JobAdmin(admin.ModelAdmin):
 @admin.register(Node)
 class NodeAdmin(admin.ModelAdmin):
     list_display = ('name', 'node_type', '_next_nodes',
-                    'job', 'args')
+                    'job', 'args', 'listen_port')
 
     def _next_nodes(self, obj):
         if hasattr(obj, 'next_nodes'):

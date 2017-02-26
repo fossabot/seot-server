@@ -49,7 +49,7 @@ class Agent(models.Model):
 
     def update_listen_port(self):
         self.used_ports.append(self.dpp_listen_port)
-        new_listen_port = DEFAULT_LISTEN_PORT
+        new_listen_port = self.DEFAULT_LISTEN_PORT
         while new_listen_port in self.used_ports:
             new_listen_port += 1
         self.dpp_listen_port = new_listen_port
