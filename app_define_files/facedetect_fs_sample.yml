@@ -1,0 +1,17 @@
+nodes:
+- name: cam
+  type: PiCameraSource
+  to:
+    - docker
+- name: docker
+  type: DockerTransformer
+  args:
+    repo: registry.ais.cmc.osaka-u.ac.jp/yamada/seot-app-facedetect
+  to:
+    - fs
+- name: fs
+  type: FileSystemSink
+  args:
+    prefix: picam
+    postfix: .jpg
+    data_key: image
