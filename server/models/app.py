@@ -57,6 +57,7 @@ class App(models.Model, AppScheduler):
                     before_n.next_nodes.add(next_n)
                     before_n.save()
                     sk.delete()
+                src.job.allocated_agent.open_used_port(src.listen_port)
                 src.delete()
             except Node.DoesNotExist as e:
                 print(str(e))

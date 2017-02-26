@@ -15,8 +15,8 @@ class AppScheduler(object):
         self.save()
         return self.jobs.all()
 
-    # job内の末端ノードで、かつ、別job内に位置するnext_nodesを持つノードを
-    # 選び出し、そのノードとnext_nodesとの間に ZMQSink / ZMQSourceのペアを挿入
+    # 所属jobが異なるnext_nodesを持つノードを選び出し、
+    # そのノードとnext_nodesとの間に ZMQSink / ZMQSourceのペアを挿入
     def _create_zmq_pair(self):
         zmq_sink_type = NodeType.objects.get(name="ZMQSink")
         zmq_source_type = NodeType.objects.get(name="ZMQSource")
@@ -35,7 +35,9 @@ class AppScheduler(object):
                     zmq_source = Node.objects.create(
                         node_type=zmq_source_type,
                         name=n.name + '_source',
-                        automatically_added=True)
+                        automatically_added=True,
+                        listen_port=n.job.allocated_agent.dpp_listen_port)
+                    n.job.allocated_agent.update_listen_port()
                 except Node.MultipleObjectsReturned:
                     return None
                 node.next_nodes.remove(n)
@@ -48,10 +50,15 @@ class AppScheduler(object):
                 self.nodes.add(zmq_sink)
                 self.nodes.add(zmq_source)
 
-                target_ip_addr = {}
-                target_ip_addr['url'] = 'tcp://{0}:{1}'.format(
+                dst_url = {}
+                dst_url['url'] = 'tcp://{0}:{1}'.format(
                         str(n.job.allocated_agent.ip_addr),
-                        str(n.job.allocated_agent.dpp_listen_port))
-                zmq_sink.args = json.dumps(target_ip_addr)
+                        str(zmq_source.listen_port))
+                zmq_sink.args = json.dumps(dst_url)
                 zmq_sink.save()
+                listen_url = {}
+                listen_url['url'] = 'tcp://0.0.0.0:{0}'.format(
+                        str(zmq_source.listen_port))
+                zmq_source.args = json.dumps(listen_url)
+                zmq_source.save()
         return self.nodes.all()
