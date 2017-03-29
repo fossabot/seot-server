@@ -1,5 +1,3 @@
-# seot-server [![build status](https://titan.ais.cmc.osaka-u.ac.jp/tis/seot-server/badges/develop/build.svg)](https://titan.ais.cmc.osaka-u.ac.jp/tis/seot-server/commits/develop)
-
 ## Requirements
 - Python 3.5.2
 - (Optional) virtualenv
